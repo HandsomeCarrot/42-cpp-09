@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:10 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/19 19:25:57 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/19 22:20:54 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,26 +14,39 @@
 # define BITCOINEXCHANGE_HPP
 
 # include <map>
+# include <stdexcept>
 # include <string>
+# include <utility>
 
 class BitcoinExchange
 {
 private:
-	const std::string				db_path_;
-	std::map<std::string, double>	exchange_rates_;
+	std::map<std::string, double>	db_; //more verbose name (e.g. database_, ...)?
 public:
-	BitcoinExchange(void);
-	BitcoinExchange(const std::string & db_path);
+// ----- Orthodox Canonical Form ----- //
+	BitcoinExchange();
 	BitcoinExchange(const BitcoinExchange & other);
 	~BitcoinExchange(void);
 
 	BitcoinExchange &	operator=(const BitcoinExchange & other);
 
-	static void	parseDateString(const std::string & date);
-	static void	evaluateDate(const std::string & date);
+// ----- object bound functions ----- //
 
-	double	getRate(const std::string & date);
-	double	exchangeBitcoins(const std::string & date, double bitcoin_amount);
+	void	loadDatabase(const std::string & db_path);
+
+	double	getRate(const std::string & date) const;
+	double	exchange(const std::string & date, double bitcoin_amount) const;
+
+// ----- object independet functions ----- //
+
+	static std::pair<std::string, std::string>	parseLine(const std::string & line, const std::string & separator);
+	static void									parseDate(const std::string & date);
+	static void									validateDate(const std::string & date);
+
+// ----- custom exceptions ----- //
+
+	class InvalidDateException : public std::runtime_error {};
+	class InvalidValueException : public std::runtime_error {};
 };
 
 # define RESET	"\033[0m"

@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/19 19:29:24 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/19 22:01:26 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,77 +14,41 @@
 
 /**
  * @brief default constructor
- *
- * Initializes the internal map of bitcoin exchange rates.
- * It reads them from a given .csv file. It also checks for correct
- * data in the file.
- *
- * Default database path = "./data.csv"
- */
+*/
 BitcoinExchange::BitcoinExchange(void) :
-	db_path_("./data.csv"),
-	exchange_rates_()
+	db_()
 {
-	DEBUG_MSG("BitcoinExchange default constructed!");
+	DEBUG_MSG("BitcoinExchange default constructed.");
 }
 
 /**
- * @brief parameterized constructor
- *
- * Same as default constructor, but initializes the database path
- * to 'db_path'.
- */
-BitcoinExchange::BitcoinExchange(const std::string & db_path)
-{
-	//TODO
-}
-
+ * @brief copy constructor
+*/
 BitcoinExchange::BitcoinExchange(const BitcoinExchange & other)
 {
+	DEBUG_MSG("BitcoinExchange copy constructed.");
 	//TODO
 }
 
+/**
+ * @brief deconstructor
+*/
 BitcoinExchange::~BitcoinExchange(void)
 {
+	DEBUG_MSG("BitcoinExchange deconstructed.");
 	//TODO
 }
 
+/**
+ * @brief copy assignment operator
+ */
 BitcoinExchange & BitcoinExchange::operator=(const BitcoinExchange & other)
 {
+	DEBUG_MSG("BitcoinExchange copy assigned.");
 	//TODO
 }
 
-/**
- * @brief checks if string is in correct format
- *
- * Parses a string, expecting the date format <YYYY-MM-DD>
- * (e.g. "20026-02-19"). If the format is wrong it will
- * throw an exception.
- *
- * @param date std::string, the string expected to be a date
- *
- * @return void
- *
- * @throw ?
- */
-void BitcoinExchange::parseDateString(const std::string & date)
-{
-	//TODO
-}
-
-/**
- * @brief evaluates a date string
- *
- * First parses the string to be a valid date string.
- * Then it checks if the date is valid. (e.g. 2022-00-12 -> invalid)
- *
- * @param date std::string, string representing a date <YYYY-MM-DD>
- *
- * @return void
- *
- * @throw ?
- */
-static void	evaluateDate(const std::string & date)
+void BitcoinExchange::loadDatabase(const std::string & db_path)
 {
 	//TODO
 }
@@ -102,8 +66,10 @@ static void	evaluateDate(const std::string & date)
  * @return double, the bitcoin exchange rate of that date
  *
  * @throw std::exception?, for incorrect date formatting
+ *
+ * @note if 'db_' is empty, throw/print an error
  */
-double BitcoinExchange::getRate(const std::string & date)
+double BitcoinExchange::getRate(const std::string & date) const
 {
 	//TODO
 }
@@ -119,8 +85,47 @@ double BitcoinExchange::getRate(const std::string & date)
  * @param bitcoin_amount double, amount of bitcoins to exchange
  *
  * @return double, the monetary value of the bitcoins
+ *
+ * @note if 'db_' is empty, throw/print an error
  */
-double	exchange(const std::string & date, double bitcoin_amount)
+double BitcoinExchange::exchange(const std::string & date, double bitcoin_amount) const
+{
+	//TODO
+}
+
+/**
+ * @brief checks if string is in correct format
+ *
+ * Parses a string, expecting the date format <YYYY-MM-DD>
+ * (e.g. "20026-02-19"). If the format is wrong it will
+ * throw an exception.
+ *
+ * @param date std::string, the string expected to be a date
+ *
+ * @return void
+ *
+ * @throw ?
+ */
+void BitcoinExchange::parseDate(const std::string & date)
+{
+	//TODO
+}
+
+/**
+ * @brief evaluates a date string
+ *
+ * First parses the string to be a valid date string.
+ * Then it checks if the date is valid. (e.g. 2022-00-12 -> invalid)
+ *
+ * @param date std::string, string representing a date <YYYY-MM-DD>
+ *
+ * @return void
+ *
+ * @throw ?
+ *
+ * @see BitcoinExchange::parseDate()
+ */
+void	BitcoinExchange::validateDate(const std::string & date)
 {
 	//TODO
 }
