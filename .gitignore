@@ -39,3 +39,14 @@
 
 # debug information files
 *.dwo
+
+# extras
+compile_flags.txt
+
+# binaries
+#ex00
+btc
+#ex01
+RPN
+#ex02
+PmergeMe
