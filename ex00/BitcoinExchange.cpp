@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/20 13:11:41 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/20 13:41:24 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -182,3 +182,10 @@ void BitcoinExchange::exchangeByFile(const std::string & file_path, const std::s
 	(void)file_path;
 	(void)separator;
 }
+
+// -------------------- EXCEPTIONS -------------------- //
+
+BitcoinExchange::InvalidLineException::InvalidLineException(const std::string & msg) : std::runtime_error(msg) {}
+BitcoinExchange::InvalidDateException::InvalidDateException(const std::string & msg) : std::runtime_error(msg) {}
+BitcoinExchange::InvalidValueException::InvalidValueException(const std::string & msg) : std::runtime_error(msg) {}
+BitcoinExchange::InvalidFileException::InvalidFileException(const std::string & msg) : std::runtime_error(msg) {}

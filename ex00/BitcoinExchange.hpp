@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:10 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/20 12:52:54 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/20 13:39:52 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,9 +59,29 @@ public:
 
 // -------------------- EXCEPTIONS -------------------- //
 
-	class InvalidDateException : public std::runtime_error {};
-	class InvalidValueException : public std::runtime_error {};
-	class InvalidFileException : public std::runtime_error {};
+	class InvalidLineException : public std::runtime_error
+	{
+	public:
+		InvalidLineException(const std::string & msg = "BitcoinExchange::InvalidLineException");
+	};
+
+	class InvalidDateException : public std::runtime_error
+	{
+	public:
+		InvalidDateException(const std::string & msg = "BitcoinExchange::InvalidDateException");
+	};
+
+	class InvalidValueException : public std::runtime_error
+	{
+	public:
+		InvalidValueException(const std::string & msg = "BitcoinExchange::InvalidValueException");
+	};
+
+	class InvalidFileException : public std::runtime_error
+	{
+	public:
+		InvalidFileException(const std::string & msg = "BitcoinExchange::InvalidFileException");
+	};
 };
 
 // -------------------- DEBUGGING STUFF -------------------- //
