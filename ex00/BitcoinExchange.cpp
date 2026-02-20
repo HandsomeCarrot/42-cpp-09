@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/19 22:01:26 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/20 12:51:26 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,10 +24,10 @@ BitcoinExchange::BitcoinExchange(void) :
 /**
  * @brief copy constructor
 */
-BitcoinExchange::BitcoinExchange(const BitcoinExchange & other)
+BitcoinExchange::BitcoinExchange(const BitcoinExchange & other) :
+	db_(other.db_)
 {
 	DEBUG_MSG("BitcoinExchange copy constructed.");
-	//TODO
 }
 
 /**
@@ -36,7 +36,6 @@ BitcoinExchange::BitcoinExchange(const BitcoinExchange & other)
 BitcoinExchange::~BitcoinExchange(void)
 {
 	DEBUG_MSG("BitcoinExchange deconstructed.");
-	//TODO
 }
 
 /**
@@ -45,6 +44,66 @@ BitcoinExchange::~BitcoinExchange(void)
 BitcoinExchange & BitcoinExchange::operator=(const BitcoinExchange & other)
 {
 	DEBUG_MSG("BitcoinExchange copy assigned.");
+
+	if (this != &other)
+	{
+		db_ = other.db_;
+	}
+
+	return (*this);
+}
+
+/**
+ * @brief ...
+ */
+std::pair<std::string, std::string> BitcoinExchange::parseLine(const std::string & line, const std::string & separator)
+{
+	//TODO
+}
+
+/**
+ * @brief checks if string is in correct format
+ *
+ * Parses a string, expecting the date format <YYYY-MM-DD>
+ * (e.g. "20026-02-19"). If the format is wrong it will
+ * throw an exception.
+ *
+ * @param date std::string, the string expected to be a date
+ *
+ * @return void
+ *
+ * @throw ?
+ */
+BitcoinExchange::s_date BitcoinExchange::parseDateString(const std::string & date_str)
+{
+	//TODO
+}
+
+/**
+ * @brief evaluates a date string
+ *
+ * First parses the string to be a valid date string.
+ * Then it checks if the date is valid. (e.g. 2022-00-12 -> invalid)
+ *
+ * @param date std::string, string representing a date <YYYY-MM-DD>
+ *
+ * @return void
+ *
+ * @throw ?
+ *
+ * @see BitcoinExchange::parseDate()
+ */
+void BitcoinExchange::validateDate(const s_date & date)
+{
+	//TODO
+}
+
+double BitcoinExchange::parseValueString(const std::string & value_str)
+{
+	//TODO
+}
+double BitcoinExchange::parseValueString(const std::string & value_str, double min_value, double max_value)
+{
 	//TODO
 }
 
@@ -94,38 +153,9 @@ double BitcoinExchange::exchange(const std::string & date, double bitcoin_amount
 }
 
 /**
- * @brief checks if string is in correct format
- *
- * Parses a string, expecting the date format <YYYY-MM-DD>
- * (e.g. "20026-02-19"). If the format is wrong it will
- * throw an exception.
- *
- * @param date std::string, the string expected to be a date
- *
- * @return void
- *
- * @throw ?
+ * @brief ...
  */
-void BitcoinExchange::parseDate(const std::string & date)
-{
-	//TODO
-}
-
-/**
- * @brief evaluates a date string
- *
- * First parses the string to be a valid date string.
- * Then it checks if the date is valid. (e.g. 2022-00-12 -> invalid)
- *
- * @param date std::string, string representing a date <YYYY-MM-DD>
- *
- * @return void
- *
- * @throw ?
- *
- * @see BitcoinExchange::parseDate()
- */
-void	BitcoinExchange::validateDate(const std::string & date)
+void BitcoinExchange::exchangeByFile(const std::string & file_path, const std::string & separator)
 {
 	//TODO
 }
