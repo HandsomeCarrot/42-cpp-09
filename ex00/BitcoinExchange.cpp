@@ -209,7 +209,22 @@ void BitcoinExchange::exchangeByFile(const std::string & file_path, const std::s
 
 // -------------------- EXCEPTIONS -------------------- //
 
-BitcoinExchange::InvalidLineException::InvalidLineException(const std::string & msg) : std::runtime_error(msg) {}
-BitcoinExchange::InvalidDateException::InvalidDateException(const std::string & msg) : std::runtime_error(msg) {}
-BitcoinExchange::InvalidValueException::InvalidValueException(const std::string & msg) : std::runtime_error(msg) {}
-BitcoinExchange::InvalidFileException::InvalidFileException(const std::string & msg) : std::runtime_error(msg) {}
+namespace {
+	std::string formatExceptionMsg(const std::string& defaultMsg, const std::string& msg) {
+		if (msg.empty())
+			return defaultMsg;
+		return defaultMsg + ": " + msg;
+	}
+}
+
+BitcoinExchange::InvalidLineException::InvalidLineException(const std::string & msg)
+	: std::runtime_error(formatExceptionMsg("bad input", msg)) {}
+
+BitcoinExchange::InvalidDateException::InvalidDateException(const std::string & msg)
+	: std::runtime_error(formatExceptionMsg("bad date", msg)) {}
+
+BitcoinExchange::InvalidValueException::InvalidValueException(const std::string & msg)
+	: std::runtime_error(formatExceptionMsg("bad value", msg)) {}
+
+BitcoinExchange::InvalidFileException::InvalidFileException(const std::string & msg)
+	: std::runtime_error(formatExceptionMsg("bad file", msg)) {}

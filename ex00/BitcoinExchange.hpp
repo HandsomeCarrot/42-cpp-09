@@ -62,25 +62,25 @@ public:
 	class InvalidLineException : public std::runtime_error
 	{
 	public:
-		InvalidLineException(const std::string & msg = "BitcoinExchange::InvalidLineException");
+		InvalidLineException(const std::string & msg = "");
 	};
 
 	class InvalidDateException : public std::runtime_error
 	{
 	public:
-		InvalidDateException(const std::string & msg = "BitcoinExchange::InvalidDateException");
+		InvalidDateException(const std::string & msg = "");
 	};
 
 	class InvalidValueException : public std::runtime_error
 	{
 	public:
-		InvalidValueException(const std::string & msg = "BitcoinExchange::InvalidValueException");
+		InvalidValueException(const std::string & msg = "");
 	};
 
 	class InvalidFileException : public std::runtime_error
 	{
 	public:
-		InvalidFileException(const std::string & msg = "BitcoinExchange::InvalidFileException");
+		InvalidFileException(const std::string & msg = "");
 	};
 };
 
