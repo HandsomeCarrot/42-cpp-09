@@ -94,6 +94,18 @@ std::pair<std::string, std::string> BitcoinExchange::splitLine(const std::string
 	return (line_pair);
 }
 
+/**
+ * @brief Validates the format of a date string.
+ * 
+ * Checks that the date string follows the format YYYY-MM-DD (10 characters total).
+ * The string must contain digits in positions 0-3, 5-6, and 8-9, with hyphens
+ * at positions 4 and 7.
+ * 
+ * @param date_str The date string to validate.
+ * 
+ * @throws BitcoinExchange::InvalidDateException If the string length is not 10
+ *         or if the format does not match YYYY-MM-DD pattern.
+ */
 static void validateDateFormat(const std::string & date_str)
 {
 	if (date_str.length() != 10)
