@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/20 13:41:24 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/20 14:18:26 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,15 +54,39 @@ BitcoinExchange & BitcoinExchange::operator=(const BitcoinExchange & other)
 }
 
 /**
- * @brief ...
+ * @brief Splits a line into two parts based on a separator string.
+ * 
+ * @param line The string to be split. Must not be empty.
+ * @param separator The delimiter string used to split the line. Must not be empty.
+ * 
+ * @return A pair of strings where:
+ *         - first: substring from the beginning to the separator (exclusive)
+ *         - second: substring from after the separator to the end
+ * 
+ * @throws BitcoinExchange::InvalidLineException if:
+ *         - line is empty
+ *         - separator is empty
+ *         - separator is not found in line
+ * 
+ * @note The separator string is excluded from both parts of the result.
+ *       If separator appears multiple times, only the first occurrence is used.
  */
 std::pair<std::string, std::string> BitcoinExchange::splitLine(const std::string & line, const std::string & separator)
 {
-	std::pair<std::string, std::string> split_line;
-	//TODO
-	split_line.first = line;
-	split_line.second = separator;
-	return (split_line);
+	std::pair<std::string, std::string> line_pair;
+
+	if (line.empty() || separator.empty())
+		throw BitcoinExchange::InvalidLineException("splitLine(): got empty string.");
+
+	std::string::size_type separator_pos = line.find(separator);
+
+	if (separator_pos == std::string::npos)
+		throw BitcoinExchange::InvalidLineException("splitLine(): separator not found in 'line'.");
+
+	line_pair.first = line.substr(0, separator_pos);
+	line_pair.second = line.substr((separator_pos + separator.length()));
+
+	return (line_pair);
 }
 
 /**
