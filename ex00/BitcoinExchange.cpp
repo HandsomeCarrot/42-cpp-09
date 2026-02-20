@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/20 19:33:24 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/20 21:48:43 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,82 +94,47 @@ std::pair<std::string, std::string> BitcoinExchange::splitLine(const std::string
 	return (line_pair);
 }
 
-/**
- * @brief Extracts and validates a numeric date component from a string.
- * 
- * Parses a decimal number from the given string starting position and advances
- * the end pointer to the character following the parsed number. Validates that
- * the input is a valid unsigned integer within acceptable range.
- * 
- * @param str_start Pointer to the start of the string to parse. Must point to
- *                  a valid digit character.
- * @param endptr    Pointer to a char pointer that will be updated to point to
- *                  the first character after the parsed number.
- * 
- * @return The parsed number as an unsigned int.
- * 
- * @throws BitcoinExchange::InvalidDateException If str_start does not begin
- *         with a digit character.
- * @throws BitcoinExchange::InvalidDateException If the parsed number is out of
- *         range (negative or exceeds UINT_MAX).
- * @throws std::logic_error If any of the input pointers are null.
- * 
- * @note Uses strtol for parsing and checks errno for overflow conditions.
- */
-static unsigned int extractDateNumber(const char * str_start, char ** endptr)
+static void validateDateFormat(const std::string & date_str)
 {
-	if (!str_start || !endptr || !*endptr)
-		throw std::logic_error("invalid argument");
+	if (date_str.length() != 10)
+		throw BitcoinExchange::InvalidDateException("format");
 
-	if (!(std::isdigit(*str_start)))
-		throw BitcoinExchange::InvalidDateException("unexpected character");
-
-	errno = 0;
-	long long_num = std::strtol(str_start, endptr, 10);
-
-	if (errno == ERANGE || long_num < 0 || long_num > std::numeric_limits<unsigned int>::max())
-		throw BitcoinExchange::InvalidDateException("out of range");
-
-	return (static_cast<unsigned int>(long_num));
+	for (int i = 0; i < 10; ++i)
+	{
+		if (!std::isdigit(date_str[i]))
+		{
+			if (date_str[i] != '-' || (i != 4 && i != 7))
+				throw BitcoinExchange::InvalidDateException("format");
+		}
+	}
 }
 
 /**
  * @brief Parses a date string and extracts year, month, and day components.
- * 
+ *
  * Expects a date string in the format "YYYY-MM-DD". Uses the extractDateNumber
  * helper function to parse each numeric component separated by hyphens.
- * 
+ *
  * @param date_str A reference to the date string to parse.
  * @return s_date A structure containing the parsed year, month, and day.
- * 
+ *
  * @throws BitcoinExchange::InvalidDateException if the format is invalid:
  *         - Missing or misplaced hyphens between date components
  *         - Unexpected characters after the day component
- * 
+ *
  * @note The function assumes extractDateNumber will validate numeric values
  *       and may throw exceptions for invalid numbers.
  */
 BitcoinExchange::s_date BitcoinExchange::parseDateString(const std::string & date_str)
 {
 	s_date date;
-	char * endptr;
+	const char * c_str = date_str.c_str();
 
-	date.year = extractDateNumber(date_str.c_str(), &endptr);
+	validateDateFormat(date_str);
 
-	if (*endptr != '-')
-		throw BitcoinExchange::InvalidDateException("expected '-'");
-	++endptr;
-
-	date.month = extractDateNumber(endptr, &endptr);
-
-	if (*endptr != '-')
-		throw BitcoinExchange::InvalidDateException("expected '-'");
-	++endptr;
-
-	date.day = extractDateNumber(endptr, &endptr);
-
-	if (*endptr != '\0')
-		throw BitcoinExchange::InvalidDateException("unexpected character");
+	date.year = static_cast<unsigned int>(std::strtol(c_str, NULL, 10));
+	date.month = static_cast<unsigned int>(std::strtol((c_str + 5), NULL, 10));
+	date.day = static_cast<unsigned int>(std::strtol((c_str + 8), NULL, 10));
 
 	return (date);
 }
