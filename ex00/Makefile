@@ -6,7 +6,7 @@
 #    By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/02/19 14:46:02 by vpoka             #+#    #+#              #
-#    Updated: 2026/02/19 14:46:03 by vpoka            ###   ########.fr        #
+#    Updated: 2026/02/20 12:43:54 by vpoka            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -16,9 +16,9 @@ NAME := btc
 
 CXX := c++
 CXXFLAGS := -Wall -Wextra -Werror -std=c++98
-DPFLAGS := -MP -MD
-DBFLAGS := -g -DDEBUG
-FSANFLAGS := $(DBFLAGS) -fsanitize=address
+DP_FLAGS := -MP -MD
+DB_FLAGS := -g -DDEBUG
+SANITIZE_FLAGS := $(DB_FLAGS) -fsanitize=address,leak,undefined
 
 INCLUDE := -Iinclude -Iinclude/helpers
 COMP := $(CXX) $(CXXFLAGS) $(INCLUDE)
@@ -77,7 +77,7 @@ $(NAME): $(OBJS)
 $(B)/%.o: %.cpp
 	@mkdir -p $(@D)
 	$(call print_compile, $<)
-	@$(COMP) $(DPFLAGS) -c $< -o $@
+	@$(COMP) $(DP_FLAGS) -c $< -o $@
 
 clean:
 	@rm -rf $(B)
@@ -91,17 +91,17 @@ re: fclean all
 
 debug: fclean
 	$(call print_debug, Compiling with debug flags...)
-	@make --no-print-directory all CXXFLAGS="$(CXXFLAGS) $(DBFLAGS)"
+	@make --no-print-directory all CXXFLAGS="$(CXXFLAGS) $(DB_FLAGS)"
 
-fsan: fclean
+sanitize: fclean
 	$(call print_debug, Compiling with fsanitize flags...)
-	@make --no-print-directory all CXXFLAGS="$(CXXFLAGS) $(FSANFLAGS)"
+	@make --no-print-directory all CXXFLAGS="$(CXXFLAGS) $(SANITIZE_FLAGS)"
 
 run: re
 	@printf "🚀 $(BLUE)Running $(NAME)...$(RESET)\n"
 	@printf "$(CYAN)--------------------------------$(RESET)\n"
 	@./$(NAME)
 
-.PHONY: all clean fclean re run debug fsan
+.PHONY: all clean fclean re run debug sanitize
 
 -include $(DEPS)
