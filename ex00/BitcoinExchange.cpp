@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/20 12:51:26 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/20 13:11:41 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,9 +56,13 @@ BitcoinExchange & BitcoinExchange::operator=(const BitcoinExchange & other)
 /**
  * @brief ...
  */
-std::pair<std::string, std::string> BitcoinExchange::parseLine(const std::string & line, const std::string & separator)
+std::pair<std::string, std::string> BitcoinExchange::splitLine(const std::string & line, const std::string & separator)
 {
+	std::pair<std::string, std::string> split_line;
 	//TODO
+	split_line.first = line;
+	split_line.second = separator;
+	return (split_line);
 }
 
 /**
@@ -76,7 +80,11 @@ std::pair<std::string, std::string> BitcoinExchange::parseLine(const std::string
  */
 BitcoinExchange::s_date BitcoinExchange::parseDateString(const std::string & date_str)
 {
+	s_date date;
 	//TODO
+	(void)date_str;
+	date.year = 1;
+	return (date);
 }
 
 /**
@@ -96,20 +104,28 @@ BitcoinExchange::s_date BitcoinExchange::parseDateString(const std::string & dat
 void BitcoinExchange::validateDate(const s_date & date)
 {
 	//TODO
+	(void)date;
 }
 
 double BitcoinExchange::parseValueString(const std::string & value_str)
 {
 	//TODO
+	(void)value_str;
+	return (0);
 }
 double BitcoinExchange::parseValueString(const std::string & value_str, double min_value, double max_value)
 {
 	//TODO
+	(void)value_str;
+	(void)min_value;
+	(void)max_value;
+	return (0);
 }
 
 void BitcoinExchange::loadDatabase(const std::string & db_path)
 {
 	//TODO
+	(void)db_path;
 }
 
 /**
@@ -131,6 +147,8 @@ void BitcoinExchange::loadDatabase(const std::string & db_path)
 double BitcoinExchange::getRate(const std::string & date) const
 {
 	//TODO
+	(void)date;
+	return (0);
 }
 
 /**
@@ -150,6 +168,9 @@ double BitcoinExchange::getRate(const std::string & date) const
 double BitcoinExchange::exchange(const std::string & date, double bitcoin_amount) const
 {
 	//TODO
+	(void)date;
+	(void)bitcoin_amount;
+	return (0);
 }
 
 /**
@@ -158,4 +179,6 @@ double BitcoinExchange::exchange(const std::string & date, double bitcoin_amount
 void BitcoinExchange::exchangeByFile(const std::string & file_path, const std::string & separator)
 {
 	//TODO
+	(void)file_path;
+	(void)separator;
 }

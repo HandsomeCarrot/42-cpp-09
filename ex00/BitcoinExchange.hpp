@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:10 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/20 12:33:08 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/20 12:52:54 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,7 @@ protected:
 		unsigned int	day;
 	};
 
-	std::pair<std::string, std::string>	parseLine(const std::string & line, const std::string & separator);
+	std::pair<std::string, std::string>	splitLine(const std::string & line, const std::string & separator);
 
 	s_date	parseDateString(const std::string & date_str);
 	void	validateDate(const s_date & date);

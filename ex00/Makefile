@@ -6,7 +6,7 @@
 #    By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/02/19 14:46:02 by vpoka             #+#    #+#              #
-#    Updated: 2026/02/20 12:43:54 by vpoka            ###   ########.fr        #
+#    Updated: 2026/02/20 13:11:08 by vpoka            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -23,7 +23,7 @@ SANITIZE_FLAGS := $(DB_FLAGS) -fsanitize=address,leak,undefined
 INCLUDE := -Iinclude -Iinclude/helpers
 COMP := $(CXX) $(CXXFLAGS) $(INCLUDE)
 
-SRCS :=	main.cpp
+SRCS :=	main.cpp BitcoinExchange.cpp
 
 B := build
 OBJS := $(SRCS:%.cpp=$(B)/%.o)
