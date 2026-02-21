@@ -6,15 +6,13 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/20 21:48:43 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/21 11:47:01 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "BitcoinExchange.hpp"
 #include <cctype>
-#include <cerrno>
 #include <cstdlib>
-#include <limits>
 #include <stdexcept>
 
 /**
@@ -106,18 +104,17 @@ std::pair<std::string, std::string> BitcoinExchange::splitLine(const std::string
  * @throws BitcoinExchange::InvalidDateException If the string length is not 10
  *         or if the format does not match YYYY-MM-DD pattern.
  */
-static void validateDateFormat(const std::string & date_str)
+void BitcoinExchange::validateDateFormat(const std::string & date_str) //move declaration to header?
 {
 	if (date_str.length() != 10)
 		throw BitcoinExchange::InvalidDateException("format");
 
 	for (int i = 0; i < 10; ++i)
 	{
-		if (!std::isdigit(date_str[i]))
-		{
-			if (date_str[i] != '-' || (i != 4 && i != 7))
-				throw BitcoinExchange::InvalidDateException("format");
-		}
+		if ((i == 4 || i == 7) && date_str[i] != '-')
+			throw BitcoinExchange::InvalidDateException("format");
+		else if (!std::isdigit(date_str[i]))
+			throw BitcoinExchange::InvalidDateException("format");
 	}
 }
 
@@ -152,23 +149,89 @@ BitcoinExchange::s_date BitcoinExchange::parseDateString(const std::string & dat
 }
 
 /**
- * @brief evaluates a date string
+ * @brief Determine whether a given year is a leap year.
  *
- * First parses the string to be a valid date string.
- * Then it checks if the date is valid. (e.g. 2022-00-12 -> invalid)
+ * Implements the Gregorian leap year rules:
+ * - A year divisible by 400 is a leap year.
+ * - A year divisible by 100 (but not 400) is not a leap year.
+ * - A year divisible by 4 (but not 100) is a leap year.
  *
- * @param date std::string, string representing a date <YYYY-MM-DD>
+ * @param year The year to test (unsigned int).
+ * @return true if @p year is a leap year, false otherwise.
+ */
+bool BitcoinExchange::isLeapYear(unsigned int year)
+{
+	if (year % 400 == 0)
+		return (true);
+	if (year % 100 == 0)
+		return (false);
+	if (year % 4 == 0)
+		return (true);
+	return (false);
+}
+
+/**
+ * @brief Get the maximum number of days for a given month.
  *
- * @return void
+ * Determines the number of days in the month (1-12). For February (month == 2),
+ * the function accounts for leap years by querying isLeapYear(year). Months
+ * with 31 days: 1, 3, 5, 7, 8, 10, 12. Months with 30 days: 4, 6, 9, 11.
  *
- * @throw ?
+ * @param month The month number (1 = January, ..., 12 = December).
+ * @param year The year used to determine leap years for February.
+ * @return The number of days in the specified month (28–31). Returns 0 for an invalid month value.
+ */
+unsigned int BitcoinExchange::getMaxDay(unsigned int month, unsigned int year)
+{
+	switch (month)
+	{
+		case 1:
+		case 3:
+		case 5:
+		case 7:
+		case 8:
+		case 10:
+		case 12:
+			return (31);
+		case 4:
+		case 6:
+		case 9:
+		case 11:
+			return (30);
+		case 2:
+			return (isLeapYear(year) ? 29 : 28);
+		default:
+			return (0);
+	}
+}
+
+/**
+ * @brief Validate a calendar date represented by an s_date structure.
  *
- * @see BitcoinExchange::parseDate()
+ * Ensures the month field is within the range [1, 12] and the day field is
+ * within the valid range for the specified month and year. The maximum valid
+ * day for the given month/year is determined via getMaxDay (which accounts
+ * for month lengths and leap years).
+ *
+ * @param date Const reference to the s_date to validate (contains day, month, year).
+ *
+ * @throws BitcoinExchange::InvalidDateException if the year is 0.
+ *
+ * @throws BitcoinExchange::InvalidDateException if the month is not in [1,12].
+ *
+ * @throws BitcoinExchange::InvalidDateException if the day is not in the range
+ *         [1, getMaxDay(month, year)].
  */
 void BitcoinExchange::validateDate(const s_date & date)
 {
-	//TODO
-	(void)date;
+	if (date.year < 1)
+		throw BitcoinExchange::InvalidDateException("year");
+
+	if (date.month < 1 || date.month > 12)
+		throw BitcoinExchange::InvalidDateException("month");
+
+	if (date.day < 1 || date.day > getMaxDay(date.month, date.year))
+		throw BitcoinExchange::InvalidDateException("day");
 }
 
 double BitcoinExchange::parseValueString(const std::string & value_str)

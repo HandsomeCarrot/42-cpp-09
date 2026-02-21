@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:10 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/20 18:42:18 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/21 11:47:23 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,21 +34,21 @@ public:
 
 // -------------------- EXTRAS -------------------- //
 protected:
-	public://tmp
 	struct s_date
 	{
 		unsigned int	year;
 		unsigned int	month;
 		unsigned int	day;
 	};
-	protected://tmp
 
 	std::pair<std::string, std::string>	splitLine(const std::string & line, const std::string & separator);
 
-	public://tmp
-	static s_date	parseDateString(const std::string & date_str);
-	protected://tmp
-	void	validateDate(const s_date & date);
+	void	validateDateFormat(const std::string & date_str);
+	s_date	parseDateString(const std::string & date_str);
+
+	bool			isLeapYear(unsigned int year);
+	unsigned int	getMaxDay(unsigned int month, unsigned int year);
+	void			validateDate(const s_date & date);
 
 	double	parseValueString(const std::string & value_str);
 	double	parseValueString(const std::string & value_str, double min_value, double max_value);
