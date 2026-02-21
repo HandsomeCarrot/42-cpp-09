@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:10 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/21 11:47:23 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/21 16:10:50 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,26 +33,6 @@ public:
 	BitcoinExchange &	operator=(const BitcoinExchange & other);
 
 // -------------------- EXTRAS -------------------- //
-protected:
-	struct s_date
-	{
-		unsigned int	year;
-		unsigned int	month;
-		unsigned int	day;
-	};
-
-	std::pair<std::string, std::string>	splitLine(const std::string & line, const std::string & separator);
-
-	void	validateDateFormat(const std::string & date_str);
-	s_date	parseDateString(const std::string & date_str);
-
-	bool			isLeapYear(unsigned int year);
-	unsigned int	getMaxDay(unsigned int month, unsigned int year);
-	void			validateDate(const s_date & date);
-
-	double	parseValueString(const std::string & value_str);
-	double	parseValueString(const std::string & value_str, double min_value, double max_value);
-
 public:
 	void	loadDatabase(const std::string & db_path);
 
