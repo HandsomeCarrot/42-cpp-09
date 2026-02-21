@@ -6,12 +6,13 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/21 17:00:48 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/21 19:18:56 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "BitcoinExchange.hpp"
 #include <cctype>
+#include <cerrno>
 #include <cstdlib>
 #include <stdexcept>
 
@@ -210,20 +211,61 @@ namespace {
 			throw BitcoinExchange::InvalidDateException("invalid day");
 	}
 
+	/**
+	 * @brief Parses a string value into a double-precision floating-point number.
+	 * 
+	 * @param value_str The string to be parsed as a double value.
+	 * 
+	 * @return The parsed double value.
+	 * 
+	 * @throw BitcoinExchange::InvalidValueException if the string is empty.
+	 * @throw BitcoinExchange::InvalidValueException if the first character is not a digit.
+	 * @throw BitcoinExchange::InvalidValueException if the string contains invalid characters.
+	 * @throw BitcoinExchange::InvalidValueException if the parsed value is out of range for double.
+	 * 
+	 * @note Uses std::strtod for conversion and validates the input string before and after parsing.
+	 */
 	double	parseValueString(const std::string & value_str)
 	{
-		//TODO
-		(void)value_str;
-		return (0);
+		if (value_str.empty())
+			throw BitcoinExchange::InvalidValueException("empty");
+		if (!std::isdigit(value_str[0]))
+			throw BitcoinExchange::InvalidValueException("unexpected character in the beginning");
+
+		char * endptr;
+		errno = 0;
+		double value = std::strtod(value_str.c_str(), &endptr);
+
+		if (*endptr != '\0')
+			throw BitcoinExchange::InvalidValueException("contains invalid character");
+		if (errno == ERANGE)
+			throw BitcoinExchange::InvalidValueException("value out of range");
+
+		return (value);
 	}
 
-	double	parseValueString(const std::string & value_str, double min_value, double max_value)
+	/**
+	 * @brief Parses a string value and validates it against a maximum threshold.
+	 * 
+	 * Converts a string representation of a numeric value to a double and ensures
+	 * it does not exceed the specified maximum value.
+	 * 
+	 * @param value_str The string to parse into a double value
+	 * @param max_value The maximum allowed value threshold
+	 * 
+	 * @return The parsed double value if valid
+	 * 
+	 * @throw BitcoinExchange::InvalidValueException If the parsed value exceeds max_value
+	 * 
+	 * @note This function delegates to another parseValueString(const std::string&)
+	 *       overload for the actual string-to-double conversion
+	 */
+	double	parseValueString(const std::string & value_str, double max_value)
 	{
-		//TODO
-		(void)value_str;
-		(void)min_value;
-		(void)max_value;
-		return (0);
+		double value = parseValueString(value_str);
+		if (value > max_value)
+			throw BitcoinExchange::InvalidValueException("value out of range");
+		return (value);
 	}
 }
 
