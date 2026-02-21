@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/21 11:47:01 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/21 14:58:33 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -107,14 +107,19 @@ std::pair<std::string, std::string> BitcoinExchange::splitLine(const std::string
 void BitcoinExchange::validateDateFormat(const std::string & date_str) //move declaration to header?
 {
 	if (date_str.length() != 10)
-		throw BitcoinExchange::InvalidDateException("format");
+		throw BitcoinExchange::InvalidDateException("format: length");
 
 	for (int i = 0; i < 10; ++i)
 	{
-		if ((i == 4 || i == 7) && date_str[i] != '-')
-			throw BitcoinExchange::InvalidDateException("format");
+		if (i == 4 || i == 7)
+		{
+			if (date_str[i] != '-')
+				throw BitcoinExchange::InvalidDateException("format: separator");
+		}
 		else if (!std::isdigit(date_str[i]))
-			throw BitcoinExchange::InvalidDateException("format");
+		{
+			throw BitcoinExchange::InvalidDateException("format: digit");
+		}
 	}
 }
 
@@ -225,13 +230,13 @@ unsigned int BitcoinExchange::getMaxDay(unsigned int month, unsigned int year)
 void BitcoinExchange::validateDate(const s_date & date)
 {
 	if (date.year < 1)
-		throw BitcoinExchange::InvalidDateException("year");
+		throw BitcoinExchange::InvalidDateException("invalid year");
 
 	if (date.month < 1 || date.month > 12)
-		throw BitcoinExchange::InvalidDateException("month");
+		throw BitcoinExchange::InvalidDateException("invalid month");
 
 	if (date.day < 1 || date.day > getMaxDay(date.month, date.year))
-		throw BitcoinExchange::InvalidDateException("day");
+		throw BitcoinExchange::InvalidDateException("invalid day");
 }
 
 double BitcoinExchange::parseValueString(const std::string & value_str)
