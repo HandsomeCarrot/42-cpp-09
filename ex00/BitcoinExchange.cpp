@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/22 14:43:41 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/22 20:41:23 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,10 @@
 #include <cctype>
 #include <cerrno>
 #include <cstdlib>
+#include <cstring>
+#include <fstream>
 #include <stdexcept>
+#include <string>
 
 // -------------------- HELPER FUNCTIONS -------------------- //
 
@@ -55,7 +58,7 @@ namespace
 		std::string::size_type separator_pos = line.find(separator);
 
 		if (separator_pos == std::string::npos)
-			throw BitcoinExchange::InvalidLineException("no separator found");
+			throw BitcoinExchange::InvalidLineException("'" + line + "': no separator (" + separator + ") found");
 
 		line_pair.first = line.substr(0, separator_pos);
 		line_pair.second = line.substr((separator_pos + separator.length()));
@@ -78,18 +81,18 @@ namespace
 	void	validateDateFormat(const std::string & date_str)
 	{
 		if (date_str.length() != 10)
-			throw BitcoinExchange::InvalidDateException("format: length");
+			throw BitcoinExchange::InvalidDateException(date_str + ": format: length");
 
 		for (int i = 0; i < 10; ++i)
 		{
 			if (i == 4 || i == 7)
 			{
 				if (date_str[i] != '-')
-					throw BitcoinExchange::InvalidDateException("format: separator");
+					throw BitcoinExchange::InvalidDateException(date_str + ": format: separator");
 			}
 			else if (!std::isdigit(date_str[i]))
 			{
-				throw BitcoinExchange::InvalidDateException("format: digit");
+				throw BitcoinExchange::InvalidDateException(date_str + ": format: digit");
 			}
 		}
 	}
@@ -203,13 +206,13 @@ namespace
 		s_date date = parseDateString(date_str);
 
 		if (date.year < 1)
-			throw BitcoinExchange::InvalidDateException("invalid year");
+			throw BitcoinExchange::InvalidDateException(date_str + ": invalid year");
 
 		if (date.month < 1 || date.month > 12)
-			throw BitcoinExchange::InvalidDateException("invalid month");
+			throw BitcoinExchange::InvalidDateException(date_str + ": invalid month");
 
 		if (date.day < 1 || date.day > getMaxDay(date.month, date.year))
-			throw BitcoinExchange::InvalidDateException("invalid day");
+			throw BitcoinExchange::InvalidDateException(date_str + ": invalid day");
 	}
 
 	/**
@@ -229,18 +232,18 @@ namespace
 	double	parseValueString(const std::string & value_str)
 	{
 		if (value_str.empty())
-			throw BitcoinExchange::InvalidValueException("empty");
+			throw BitcoinExchange::InvalidValueException(value_str + ": empty");
 		if (!std::isdigit(value_str[0]))
-			throw BitcoinExchange::InvalidValueException("unexpected character before value");
+			throw BitcoinExchange::InvalidValueException(value_str + ": unexpected character before value");
 
 		char * endptr;
 		errno = 0;
 		double value = std::strtod(value_str.c_str(), &endptr);
 
 		if (*endptr != '\0')
-			throw BitcoinExchange::InvalidValueException("contains invalid character");
+			throw BitcoinExchange::InvalidValueException(value_str + ": contains invalid character");
 		if (errno == ERANGE)
-			throw BitcoinExchange::InvalidValueException("value out of range");
+			throw BitcoinExchange::InvalidValueException(value_str + ": value out of range");
 
 		return (value);
 	}
@@ -265,7 +268,7 @@ namespace
 	{
 		double value = parseValueString(value_str);
 		if (value > max_value)
-			throw BitcoinExchange::InvalidValueException("value out of range");
+			throw BitcoinExchange::InvalidValueException(value_str + ": value out of range");
 		return (value);
 	}
 }
@@ -317,8 +320,35 @@ BitcoinExchange & BitcoinExchange::operator=(const BitcoinExchange & other)
 
 void BitcoinExchange::loadDatabase(const std::string & db_path)
 {
-	//TODO
-	(void)db_path;
+	if (db_path.empty())
+		throw BitcoinExchange::InvalidFileException("no path provided");
+
+	std::ifstream db_file(db_path.c_str());
+
+	if (!db_file.is_open())
+		throw BitcoinExchange::InvalidFileException("'" + db_path + "': failed to open: " + std::strerror(errno));
+
+	std::string file_line;
+	std::pair<std::string, std::string> split_line;
+	
+	std::getline(db_file, file_line);
+	split_line = splitLine(file_line, ",");
+
+	if (split_line.first != "date" || split_line.second != "exchange_rate")
+		throw BitcoinExchange::InvalidLineException("'" + db_path + "': '" + file_line + "': invalid column descriptions (date,exchange_rate)");
+
+	while (std::getline(db_file, file_line))
+	{
+		split_line = splitLine(file_line, ",");
+		validateDate(split_line.first);
+
+		db_[split_line.first] = parseValueString(split_line.second);
+	}
+
+	if (db_file.bad())
+		throw BitcoinExchange::InvalidFileException("'" + db_path + "': error while reading: " + std::strerror(errno));
+	else if (!db_file.eof())
+		throw BitcoinExchange::InvalidFileException("'" + db_path + "': error while reading: did not reach end of file");
 }
 
 /**
@@ -374,6 +404,7 @@ void BitcoinExchange::exchangeByFile(const std::string & file_path, const std::s
 	//TODO
 	(void)file_path;
 	(void)separator;
+	(void)parseValueString("", 1000); //delete me
 }
 
 // -------------------- EXCEPTIONS -------------------- //
