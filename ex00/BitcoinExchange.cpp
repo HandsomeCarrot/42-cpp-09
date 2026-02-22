@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/21 19:18:56 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/22 14:43:41 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,8 @@
 
 // -------------------- HELPER FUNCTIONS -------------------- //
 
-namespace {
+namespace
+{
 	struct s_date
 	{
 		unsigned int	year;
@@ -230,7 +231,7 @@ namespace {
 		if (value_str.empty())
 			throw BitcoinExchange::InvalidValueException("empty");
 		if (!std::isdigit(value_str[0]))
-			throw BitcoinExchange::InvalidValueException("unexpected character in the beginning");
+			throw BitcoinExchange::InvalidValueException("unexpected character before value");
 
 		char * endptr;
 		errno = 0;
@@ -377,7 +378,8 @@ void BitcoinExchange::exchangeByFile(const std::string & file_path, const std::s
 
 // -------------------- EXCEPTIONS -------------------- //
 
-namespace {
+namespace
+{
 	std::string formatExceptionMsg(const std::string& defaultMsg, const std::string& msg) {
 		if (msg.empty())
 			return defaultMsg;
