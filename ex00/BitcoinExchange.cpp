@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/22 20:41:23 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/22 21:43:19 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
+#include <exception>
 #include <fstream>
 #include <stdexcept>
 #include <string>
@@ -320,35 +321,61 @@ BitcoinExchange & BitcoinExchange::operator=(const BitcoinExchange & other)
 
 void BitcoinExchange::loadDatabase(const std::string & db_path)
 {
+	int tmp_errno = 0;
+
 	if (db_path.empty())
-		throw BitcoinExchange::InvalidFileException("no path provided");
+		throw InvalidFileException("no database path provided");
 
 	std::ifstream db_file(db_path.c_str());
 
+	tmp_errno = errno;
 	if (!db_file.is_open())
-		throw BitcoinExchange::InvalidFileException("'" + db_path + "': failed to open: " + std::strerror(errno));
+		throw InvalidFileException("'" + db_path + "': failed to open: " + std::strerror(tmp_errno));
 
 	std::string file_line;
 	std::pair<std::string, std::string> split_line;
-	
+
 	std::getline(db_file, file_line);
-	split_line = splitLine(file_line, ",");
+
+	tmp_errno = errno;
+	if (!db_file && !db_file.eof()) //because if eof, can also set failbit
+		throw InvalidFileException("'" + db_path + "': error while reading: " + std::strerror(tmp_errno));
+	else if (file_line.empty())
+		throw InvalidFileException("'" + db_path + "': empty file");
+
+	try
+	{
+		split_line = splitLine(file_line, ",");
+	}
+	catch (const InvalidLineException & e)
+	{
+		throw InvalidFileException("'" + db_path + "': invalid csv header: " + e.what());
+	}
 
 	if (split_line.first != "date" || split_line.second != "exchange_rate")
-		throw BitcoinExchange::InvalidLineException("'" + db_path + "': '" + file_line + "': invalid column descriptions (date,exchange_rate)");
+		throw InvalidLineException("'" + db_path + "': '" + file_line + "': invalid column descriptions (date,exchange_rate)");
 
 	while (std::getline(db_file, file_line))
 	{
-		split_line = splitLine(file_line, ",");
-		validateDate(split_line.first);
+		try
+		{
+			split_line = splitLine(file_line, ",");
 
-		db_[split_line.first] = parseValueString(split_line.second);
+			validateDate(split_line.first);
+
+			db_[split_line.first] = parseValueString(split_line.second);
+		}
+		catch (const std::exception & e)
+		{
+			throw InvalidFileException("'" + db_path + "': " + e.what());
+		}
 	}
 
+	tmp_errno = errno;
 	if (db_file.bad())
-		throw BitcoinExchange::InvalidFileException("'" + db_path + "': error while reading: " + std::strerror(errno));
+		throw InvalidFileException("'" + db_path + "': error while reading: " + std::strerror(tmp_errno));
 	else if (!db_file.eof())
-		throw BitcoinExchange::InvalidFileException("'" + db_path + "': error while reading: did not reach end of file");
+		throw InvalidFileException("'" + db_path + "': error while reading: unexpected read failure");
 }
 
 /**
