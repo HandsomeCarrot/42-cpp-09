@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/23 02:38:09 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/23 03:05:55 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -102,17 +102,16 @@ namespace
 	/**
 	 * @brief Parses a date string and extracts year, month, and day components.
 	 *
-	 * Expects a date string in the format "YYYY-MM-DD". Uses the
-	 * validateDateFormat() function to validate the format. If anything is wrong,
-	 * the function will throw an error. After validation it will convert
-	 * the string to the 3 date values with std::strtoul.
+	 * Expects a date string in the format "YYYY-MM-DD". First validates the
+	 * format using validateDateFormat(), which checks for correct length and
+	 * digit/hyphen positioning. After validation, converts the date components
+	 * to unsigned integers using std::strtoul.
 	 *
 	 * @param date_str A reference to the date string to parse.
 	 * @return s_date A structure containing the parsed year, month, and day.
 	 *
-	 * @throws BitcoinExchange::InvalidDateException if the format is invalid:
-	 *         - Missing or misplaced hyphens between date components
-	 *         - Unexpected characters after the day component
+	 * @throws BitcoinExchange::InvalidDateException if the format is invalid
+	 *         (delegated from validateDateFormat).
 	 */
 	s_date	parseDateString(const std::string & date_str)
 	{
@@ -186,21 +185,20 @@ namespace
 	}
 
 	/**
-	 * @brief Validate a calendar date represented by an s_date structure.
+	 * @brief Validates a date string for format and logical correctness.
 	 *
-	 * Ensures the month field is within the range [1, 12] and the day field is
-	 * within the valid range for the specified month and year. The maximum valid
-	 * day for the given month/year is determined via getMaxDay (which accounts
-	 * for month lengths and leap years).
+	 * Parses the date string using parseDateString() and validates that:
+	 * - The year is not 0
+	 * - The month is within the range [1, 12]
+	 * - The day is within the valid range [1, getMaxDay(month, year)]
+	 * 
+	 * The maximum valid day for the given month/year is determined via getMaxDay,
+	 * which accounts for month lengths and leap years.
 	 *
-	 * @param date_str The date string to validate.
+	 * @param date_str The date string in YYYY-MM-DD format to validate.
 	 *
-	 * @throws BitcoinExchange::InvalidDateException if the year is 0.
-	 *
-	 * @throws BitcoinExchange::InvalidDateException if the month is not in [1,12].
-	 *
-	 * @throws BitcoinExchange::InvalidDateException if the day is not in the range
-	 *         [1, getMaxDay(month, year)].
+	 * @throws BitcoinExchange::InvalidDateException if the date format is invalid,
+	 *         year is 0, month is not in [1,12], or day is not in the valid range.
 	 */
 	void	validateDate(const std::string & date_str)
 	{
@@ -219,16 +217,18 @@ namespace
 	/**
 	 * @brief Parses a string value into a double-precision floating-point number.
 	 * 
+	 * Uses std::strtod for conversion and validates that the entire string is
+	 * consumed (no trailing invalid characters), the value is non-negative,
+	 * and within the valid range for double.
+	 * 
 	 * @param value_str The string to be parsed as a double value.
 	 * 
-	 * @return The parsed double value.
+	 * @return The parsed non-negative double value.
 	 * 
 	 * @throw BitcoinExchange::InvalidValueException if the string is empty.
-	 * @throw BitcoinExchange::InvalidValueException if the first character is not a digit.
 	 * @throw BitcoinExchange::InvalidValueException if the string contains invalid characters.
-	 * @throw BitcoinExchange::InvalidValueException if the parsed value is out of range for double.
-	 * 
-	 * @note Uses std::strtod for conversion and validates the input string before and after parsing.
+	 * @throw BitcoinExchange::InvalidValueException if the value is negative.
+	 * @throw BitcoinExchange::InvalidValueException if the parsed value causes ERANGE.
 	 */
 	double	parseValueString(const std::string & value_str)
 	{
@@ -273,6 +273,17 @@ namespace
 		return (value);
 	}
 
+	/**
+	 * @brief Opens a file stream and validates the operation.
+	 * 
+	 * @param file_path The path to the file to open. Must not be empty.
+	 * @param file Reference to an ifstream object that will be used to open the file.
+	 * 
+	 * @throws std::runtime_error if file_path is empty.
+	 * @throws std::runtime_error if the file cannot be opened (with errno details).
+	 * 
+	 * @note The file stream must be closed by the caller when done.
+	 */
 	void openFile(const std::string & file_path, std::ifstream & file)
 	{
 		int tmp_errno;
@@ -288,6 +299,24 @@ namespace
 			throw std::runtime_error(std::string("failed to open: ") + std::strerror(tmp_errno));
 	}
 
+	/**
+	 * @brief Validates the header line of a CSV file.
+	 * 
+	 * Reads the first line of the file and checks that it matches the expected
+	 * column format. The header must contain two columns separated by the specified
+	 * separator, matching the provided column names.
+	 * 
+	 * @param file Reference to an open input file stream positioned at the start.
+	 * @param separator The delimiter string used to separate columns (e.g., "," or " | ").
+	 * @param columns A pair containing the expected column names (first, second).
+	 * 
+	 * @throws std::runtime_error if file reading fails.
+	 * @throws std::runtime_error if the file is empty.
+	 * @throws std::runtime_error if the header format is invalid.
+	 * @throws std::runtime_error if column names don't match the expected values.
+	 * 
+	 * @note After this call, the file stream will be positioned at the second line.
+	 */
 	void validateCSVHeader(
 		std::ifstream & file,
 		const std::string & separator,
@@ -322,6 +351,22 @@ namespace
 			throw std::runtime_error(header_line + "invalid column descriptions (" + columns.first + "," + columns.second + ")");
 	}
 
+	/**
+	 * @brief Parses a CSV line into a date-value pair.
+	 * 
+	 * Splits the line using the specified separator, validates the date format,
+	 * and parses the value as a double. The line is expected to contain a date
+	 * in YYYY-MM-DD format followed by a numeric value.
+	 * 
+	 * @param line The CSV line to parse.
+	 * @param separator The delimiter string used to split the line.
+	 * 
+	 * @return A pair containing the date string and the parsed numeric value.
+	 * 
+	 * @throws BitcoinExchange::InvalidLineException if line format is invalid.
+	 * @throws BitcoinExchange::InvalidDateException if the date is invalid.
+	 * @throws BitcoinExchange::InvalidValueException if the value cannot be parsed.
+	 */
 	std::pair<std::string, double> parseCSVLine(const std::string & line, const std::string & separator)
 	{
 		std::pair<std::string, std::string> split_line = splitLine(line, separator);
@@ -333,6 +378,21 @@ namespace
 		return (std::make_pair(split_line.first, value));
 	}
 
+	/**
+	 * @brief Validates that a file stream has reached EOF without errors.
+	 * 
+	 * Checks the state of a file stream after reading operations to ensure
+	 * it reached the end-of-file naturally without encountering errors.
+	 * 
+	 * @param file The input file stream to check.
+	 * 
+	 * @throws std::runtime_error
+	 *         - stream is in a bad state (with errno details),
+	 *         - failed without reaching EOF.
+	 * 
+	 * @note This should be called after a read loop completes to verify
+	 *       the file was read successfully in its entirety.
+	 */
 	void checkFileEnd(const std::ifstream & file)
 	{
 		int tmp_errno = errno;
@@ -347,7 +407,7 @@ namespace
 // -------------------- ORTHODOX CANONICAL FORM -------------------- //
 
 /**
- * @brief default constructor
+ * @brief Default constructor.
  */
 BitcoinExchange::BitcoinExchange(void) :
 	db_()
@@ -356,7 +416,9 @@ BitcoinExchange::BitcoinExchange(void) :
 }
 
 /**
- * @brief copy constructor
+ * @brief Copy constructor.
+ * 
+ * @param other The BitcoinExchange object to copy from.
  */
 BitcoinExchange::BitcoinExchange(const BitcoinExchange & other) :
 	db_(other.db_)
@@ -365,7 +427,7 @@ BitcoinExchange::BitcoinExchange(const BitcoinExchange & other) :
 }
 
 /**
- * @brief deconstructor
+ * @brief Destructor.
  */
 BitcoinExchange::~BitcoinExchange(void)
 {
@@ -373,7 +435,11 @@ BitcoinExchange::~BitcoinExchange(void)
 }
 
 /**
- * @brief copy assignment operator
+ * @brief Copy assignment operator.
+ * 
+ * @param other The BitcoinExchange object to assign from.
+ * 
+ * @return Reference to this object after assignment.
  */
 BitcoinExchange & BitcoinExchange::operator=(const BitcoinExchange & other)
 {
@@ -389,6 +455,23 @@ BitcoinExchange & BitcoinExchange::operator=(const BitcoinExchange & other)
 
 // -------------------- PUBLIC METHODS -------------------- //
 
+/**
+ * @brief Loads exchange rate data from a CSV file into the database.
+ * 
+ * Opens and parses a CSV file containing date and exchange rate pairs.
+ * The file must have a header with columns "date" and "exchange_rate",
+ * separated by commas. Each subsequent line should contain a date in
+ * YYYY-MM-DD format and a corresponding numeric exchange rate value.
+ * Empty lines are skipped.
+ * 
+ * @param file_path Path to the CSV file containing exchange rate data.
+ * 
+ * @throws InvalidFileException if the file cannot be opened, has invalid
+ *         format, contains invalid dates/values, or encounters read errors.
+ * 
+ * @note The database (db_) is populated with date-rate pairs as a std::map.
+ *       If duplicate dates exist in the file, later entries will overwrite earlier ones.
+ */
 void BitcoinExchange::loadDatabase(const std::string & file_path)
 {
 	std::ifstream	file;
