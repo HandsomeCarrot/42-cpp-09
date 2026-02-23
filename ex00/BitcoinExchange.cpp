@@ -6,19 +6,20 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/23 01:21:19 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/23 02:38:09 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "BitcoinExchange.hpp"
-#include <cctype>
-#include <cerrno>
-#include <cstdlib>
-#include <cstring>
-#include <exception>
-#include <fstream>
-#include <stdexcept>
-#include <string>
+#include <cctype>		// std::isdigit()
+#include <cerrno>		// errno, ERANGE
+#include <cstdlib>		// std::strtoul(), std::strtod()
+#include <cstring>		// std::strerror()
+#include <exception>	// std::exception
+#include <fstream>		// std::ifstream
+#include <stdexcept>	// std::runtime_error
+#include <string>		// std::string, std::getline()
+#include <utility>		// std::pair, std::make_pair()
 
 // -------------------- HELPER FUNCTIONS -------------------- //
 
@@ -271,6 +272,76 @@ namespace
 			throw BitcoinExchange::InvalidValueException(value_str + ": value out of range");
 		return (value);
 	}
+
+	void openFile(const std::string & file_path, std::ifstream & file)
+	{
+		int tmp_errno;
+		
+		if (file_path.empty())
+			throw std::runtime_error("no file provided");
+
+		errno = 0;
+		file.open(file_path.c_str());
+
+		tmp_errno = errno;
+		if (!file.is_open())
+			throw std::runtime_error(std::string("failed to open: ") + std::strerror(tmp_errno));
+	}
+
+	void validateCSVHeader(
+		std::ifstream & file,
+		const std::string & separator,
+		const std::pair<std::string, std::string> & columns)
+	{
+		// read the first line
+		int tmp_errno;
+		std::string header_line;
+		
+		errno = 0;
+		std::getline(file, header_line);
+
+		tmp_errno = errno;
+		if (!file && !file.eof())
+			throw std::runtime_error(std::string("error while reading: ") + std::strerror(tmp_errno));
+		if (header_line.empty())
+			throw std::runtime_error("empty file");
+
+		// validate header
+		std::pair<std::string, std::string> split_line;
+
+		try
+		{
+			split_line = splitLine(header_line, separator);
+		}
+		catch (const BitcoinExchange::InvalidLineException & e)
+		{
+			throw std::runtime_error(std::string("invalid csv header: ") + e.what());
+		}
+
+		if (split_line != columns)
+			throw std::runtime_error(header_line + "invalid column descriptions (" + columns.first + "," + columns.second + ")");
+	}
+
+	std::pair<std::string, double> parseCSVLine(const std::string & line, const std::string & separator)
+	{
+		std::pair<std::string, std::string> split_line = splitLine(line, separator);
+		
+		validateDate(split_line.first);
+
+		double value = parseValueString(split_line.second);
+
+		return (std::make_pair(split_line.first, value));
+	}
+
+	void checkFileEnd(const std::ifstream & file)
+	{
+		int tmp_errno = errno;
+
+		if (file.bad())
+			throw std::runtime_error(std::string("error while reading: ") + std::strerror(tmp_errno));
+		else if (!file.eof())
+			throw std::runtime_error("error while reading: unexpected read failure");
+	}
 }
 
 // -------------------- ORTHODOX CANONICAL FORM -------------------- //
@@ -318,69 +389,31 @@ BitcoinExchange & BitcoinExchange::operator=(const BitcoinExchange & other)
 
 // -------------------- PUBLIC METHODS -------------------- //
 
-void BitcoinExchange::loadDatabase(const std::string & db_path)
+void BitcoinExchange::loadDatabase(const std::string & file_path)
 {
-
-
-	if (db_path.empty())
-		throw InvalidFileException("no database path provided");
-
-	int tmp_errno = 0;
-	std::ifstream db_file(db_path.c_str());
-
-	tmp_errno = errno;
-	if (!db_file.is_open())
-		throw InvalidFileException("'" + db_path + "': failed to open: " + std::strerror(tmp_errno));
-
-	std::string file_line;
-	std::pair<std::string, std::string> split_line;
-
-	tmp_errno = 0;
-	std::getline(db_file, file_line);
-
-	tmp_errno = errno;
-	if (!db_file && !db_file.eof()) //because if eof, can also set failbit
-		throw InvalidFileException("'" + db_path + "': error while reading: " + std::strerror(tmp_errno));
-	else if (file_line.empty())
-		throw InvalidFileException("'" + db_path + "': empty file");
+	std::ifstream	file;
+	std::string		line;
 
 	try
 	{
-		split_line = splitLine(file_line, ",");
-	}
-	catch (const InvalidLineException & e)
-	{
-		throw InvalidFileException("'" + db_path + "': invalid csv header: " + e.what());
-	}
+		openFile(file_path, file);
+		validateCSVHeader(file, ",", std::make_pair("date", "exchange_rate"));
 
-	if (split_line.first != "date" || split_line.second != "exchange_rate")
-		throw InvalidFileException("'" + db_path + "': '" + file_line + "': invalid column descriptions (date,exchange_rate)");
-
-	tmp_errno = 0;
-	while (std::getline(db_file, file_line))
-	{
-		if (file_line.empty())
-			continue ;
-
-		try
+		while (std::getline(file, line))
 		{
-			split_line = splitLine(file_line, ",");
+			if (line.empty())
+				continue ;
 
-			validateDate(split_line.first);
+			std::pair<std::string, double> entry = parseCSVLine(line, ",");
+			db_[entry.first] = entry.second;
+		}
 
-			db_[split_line.first] = parseValueString(split_line.second);
-		}
-		catch (const std::exception & e)
-		{
-			throw InvalidFileException("'" + db_path + "': " + e.what());
-		}
+		checkFileEnd(file);
 	}
-
-	tmp_errno = errno;
-	if (db_file.bad())
-		throw InvalidFileException("'" + db_path + "': error while reading: " + std::strerror(tmp_errno));
-	else if (!db_file.eof())
-		throw InvalidFileException("'" + db_path + "': error while reading: unexpected read failure");
+	catch (const std::exception & e)
+	{
+		throw InvalidFileException("'" + file_path + "': " + e.what());
+	}
 }
 
 /**
