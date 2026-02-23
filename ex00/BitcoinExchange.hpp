@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:10 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/22 16:40:22 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/23 00:42:53 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,6 +73,7 @@ public:
 # define YELLOW	"\033[33m"
 
 # ifdef DEBUG
+#  include <iostream>
 #  define DEBUG_MSG(x) std::cout << YELLOW << "[DEBUG] " << RESET << x << std::endl
 # else
 #  define DEBUG_MSG(x)

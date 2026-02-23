@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/22 21:43:19 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/02/23 01:21:19 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -91,7 +91,7 @@ namespace
 				if (date_str[i] != '-')
 					throw BitcoinExchange::InvalidDateException(date_str + ": format: separator");
 			}
-			else if (!std::isdigit(date_str[i]))
+			else if (!std::isdigit(static_cast<unsigned char>(date_str[i])))
 			{
 				throw BitcoinExchange::InvalidDateException(date_str + ": format: digit");
 			}
@@ -101,8 +101,10 @@ namespace
 	/**
 	 * @brief Parses a date string and extracts year, month, and day components.
 	 *
-	 * Expects a date string in the format "YYYY-MM-DD". Uses the extractDateNumber
-	 * helper function to parse each numeric component separated by hyphens.
+	 * Expects a date string in the format "YYYY-MM-DD". Uses the
+	 * validateDateFormat() function to validate the format. If anything is wrong,
+	 * the function will throw an error. After validation it will convert
+	 * the string to the 3 date values with std::strtoul.
 	 *
 	 * @param date_str A reference to the date string to parse.
 	 * @return s_date A structure containing the parsed year, month, and day.
@@ -110,9 +112,6 @@ namespace
 	 * @throws BitcoinExchange::InvalidDateException if the format is invalid:
 	 *         - Missing or misplaced hyphens between date components
 	 *         - Unexpected characters after the day component
-	 *
-	 * @note The function assumes extractDateNumber will validate numeric values
-	 *       and may throw exceptions for invalid numbers.
 	 */
 	s_date	parseDateString(const std::string & date_str)
 	{
@@ -121,9 +120,9 @@ namespace
 
 		validateDateFormat(date_str);
 
-		date.year = static_cast<unsigned int>(std::strtol(c_str, NULL, 10));
-		date.month = static_cast<unsigned int>(std::strtol((c_str + 5), NULL, 10));
-		date.day = static_cast<unsigned int>(std::strtol((c_str + 8), NULL, 10));
+		date.year = static_cast<unsigned int>(std::strtoul(c_str, NULL, 10));
+		date.month = static_cast<unsigned int>(std::strtoul((c_str + 5), NULL, 10));
+		date.day = static_cast<unsigned int>(std::strtoul((c_str + 8), NULL, 10));
 
 		return (date);
 	}
@@ -206,13 +205,13 @@ namespace
 	{
 		s_date date = parseDateString(date_str);
 
-		if (date.year < 1)
+		if (date.year == 0)
 			throw BitcoinExchange::InvalidDateException(date_str + ": invalid year");
 
-		if (date.month < 1 || date.month > 12)
+		if (date.month == 0 || date.month > 12)
 			throw BitcoinExchange::InvalidDateException(date_str + ": invalid month");
 
-		if (date.day < 1 || date.day > getMaxDay(date.month, date.year))
+		if (date.day == 0 || date.day > getMaxDay(date.month, date.year))
 			throw BitcoinExchange::InvalidDateException(date_str + ": invalid day");
 	}
 
@@ -234,8 +233,6 @@ namespace
 	{
 		if (value_str.empty())
 			throw BitcoinExchange::InvalidValueException(value_str + ": empty");
-		if (!std::isdigit(value_str[0]))
-			throw BitcoinExchange::InvalidValueException(value_str + ": unexpected character before value");
 
 		char * endptr;
 		errno = 0;
@@ -243,6 +240,8 @@ namespace
 
 		if (*endptr != '\0')
 			throw BitcoinExchange::InvalidValueException(value_str + ": contains invalid character");
+		if (value < 0)
+			throw BitcoinExchange::InvalidValueException(value_str + ": value not positive");
 		if (errno == ERANGE)
 			throw BitcoinExchange::InvalidValueException(value_str + ": value out of range");
 
@@ -321,11 +320,12 @@ BitcoinExchange & BitcoinExchange::operator=(const BitcoinExchange & other)
 
 void BitcoinExchange::loadDatabase(const std::string & db_path)
 {
-	int tmp_errno = 0;
+
 
 	if (db_path.empty())
 		throw InvalidFileException("no database path provided");
 
+	int tmp_errno = 0;
 	std::ifstream db_file(db_path.c_str());
 
 	tmp_errno = errno;
@@ -335,6 +335,7 @@ void BitcoinExchange::loadDatabase(const std::string & db_path)
 	std::string file_line;
 	std::pair<std::string, std::string> split_line;
 
+	tmp_errno = 0;
 	std::getline(db_file, file_line);
 
 	tmp_errno = errno;
@@ -353,10 +354,14 @@ void BitcoinExchange::loadDatabase(const std::string & db_path)
 	}
 
 	if (split_line.first != "date" || split_line.second != "exchange_rate")
-		throw InvalidLineException("'" + db_path + "': '" + file_line + "': invalid column descriptions (date,exchange_rate)");
+		throw InvalidFileException("'" + db_path + "': '" + file_line + "': invalid column descriptions (date,exchange_rate)");
 
+	tmp_errno = 0;
 	while (std::getline(db_file, file_line))
 	{
+		if (file_line.empty())
+			continue ;
+
 		try
 		{
 			split_line = splitLine(file_line, ",");
