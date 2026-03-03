@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/23 03:05:55 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/03/03 16:49:51 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,8 @@
 #include <cstring>		// std::strerror()
 #include <exception>	// std::exception
 #include <fstream>		// std::ifstream
+#include <iostream>		// std::cerr, BitcoinExchange::loadDatabase()
+#include <sstream>		// std::stringstream, BitcoinExchange::loadDatabase()
 #include <stdexcept>	// std::runtime_error
 #include <string>		// std::string, std::getline()
 #include <utility>		// std::pair, std::make_pair()
@@ -83,18 +85,18 @@ namespace
 	void	validateDateFormat(const std::string & date_str)
 	{
 		if (date_str.length() != 10)
-			throw BitcoinExchange::InvalidDateException(date_str + ": format: length");
+			throw BitcoinExchange::InvalidDateException("'" + date_str + "': format: length");
 
 		for (int i = 0; i < 10; ++i)
 		{
 			if (i == 4 || i == 7)
 			{
 				if (date_str[i] != '-')
-					throw BitcoinExchange::InvalidDateException(date_str + ": format: separator");
+					throw BitcoinExchange::InvalidDateException("'" + date_str + "': format: separator");
 			}
 			else if (!std::isdigit(static_cast<unsigned char>(date_str[i])))
 			{
-				throw BitcoinExchange::InvalidDateException(date_str + ": format: digit");
+				throw BitcoinExchange::InvalidDateException("'" + date_str + "': format: digit");
 			}
 		}
 	}
@@ -205,13 +207,13 @@ namespace
 		s_date date = parseDateString(date_str);
 
 		if (date.year == 0)
-			throw BitcoinExchange::InvalidDateException(date_str + ": invalid year");
+			throw BitcoinExchange::InvalidDateException("'" + date_str + "': invalid year");
 
 		if (date.month == 0 || date.month > 12)
-			throw BitcoinExchange::InvalidDateException(date_str + ": invalid month");
+			throw BitcoinExchange::InvalidDateException("'" + date_str + "': invalid month");
 
 		if (date.day == 0 || date.day > getMaxDay(date.month, date.year))
-			throw BitcoinExchange::InvalidDateException(date_str + ": invalid day");
+			throw BitcoinExchange::InvalidDateException("'" + date_str + "': invalid day");
 	}
 
 	/**
@@ -279,8 +281,8 @@ namespace
 	 * @param file_path The path to the file to open. Must not be empty.
 	 * @param file Reference to an ifstream object that will be used to open the file.
 	 * 
-	 * @throws std::runtime_error if file_path is empty.
-	 * @throws std::runtime_error if the file cannot be opened (with errno details).
+	 * @throws BitcoinExchange::InvalidFileException if file_path is empty.
+	 * @throws BitcoinExchange::InvalidFileException if the file cannot be opened (with errno details).
 	 * 
 	 * @note The file stream must be closed by the caller when done.
 	 */
@@ -289,14 +291,14 @@ namespace
 		int tmp_errno;
 		
 		if (file_path.empty())
-			throw std::runtime_error("no file provided");
+			throw BitcoinExchange::InvalidFileException("no file provided");
 
 		errno = 0;
 		file.open(file_path.c_str());
 
 		tmp_errno = errno;
 		if (!file.is_open())
-			throw std::runtime_error(std::string("failed to open: ") + std::strerror(tmp_errno));
+			throw BitcoinExchange::InvalidFileException(std::string("failed to open: ") + std::strerror(tmp_errno));
 	}
 
 	/**
@@ -310,10 +312,10 @@ namespace
 	 * @param separator The delimiter string used to separate columns (e.g., "," or " | ").
 	 * @param columns A pair containing the expected column names (first, second).
 	 * 
-	 * @throws std::runtime_error if file reading fails.
-	 * @throws std::runtime_error if the file is empty.
-	 * @throws std::runtime_error if the header format is invalid.
-	 * @throws std::runtime_error if column names don't match the expected values.
+	 * @throws BitcoinExchange::InvalidFileException if file reading fails.
+	 * @throws BitcoinExchange::InvalidFileException if the file is empty.
+	 * @throws BitcoinExchange::InvalidFileException if the header format is invalid.
+	 * @throws BitcoinExchange::InvalidFileException if column names don't match the expected values.
 	 * 
 	 * @note After this call, the file stream will be positioned at the second line.
 	 */
@@ -322,7 +324,7 @@ namespace
 		const std::string & separator,
 		const std::pair<std::string, std::string> & columns)
 	{
-		// read the first line
+		// -- read the first line --
 		int tmp_errno;
 		std::string header_line;
 		
@@ -331,11 +333,11 @@ namespace
 
 		tmp_errno = errno;
 		if (!file && !file.eof())
-			throw std::runtime_error(std::string("error while reading: ") + std::strerror(tmp_errno));
+			throw BitcoinExchange::InvalidFileException(std::string("error while reading: ") + std::strerror(tmp_errno));
 		if (header_line.empty())
-			throw std::runtime_error("empty file");
+			throw BitcoinExchange::InvalidFileException("empty file");
 
-		// validate header
+		// -- validate header --
 		std::pair<std::string, std::string> split_line;
 
 		try
@@ -344,11 +346,11 @@ namespace
 		}
 		catch (const BitcoinExchange::InvalidLineException & e)
 		{
-			throw std::runtime_error(std::string("invalid csv header: ") + e.what());
+			throw BitcoinExchange::InvalidFileException(std::string("invalid csv header: ") + e.what());
 		}
 
 		if (split_line != columns)
-			throw std::runtime_error(header_line + "invalid column descriptions (" + columns.first + "," + columns.second + ")");
+			throw BitcoinExchange::InvalidLineException("invalid column descriptors: expected: '" + columns.first + "," + columns.second + "'");
 	}
 
 	/**
@@ -386,7 +388,7 @@ namespace
 	 * 
 	 * @param file The input file stream to check.
 	 * 
-	 * @throws std::runtime_error
+	 * @throws BitcoinExchange::InvalidFileException
 	 *         - stream is in a bad state (with errno details),
 	 *         - failed without reaching EOF.
 	 * 
@@ -398,9 +400,9 @@ namespace
 		int tmp_errno = errno;
 
 		if (file.bad())
-			throw std::runtime_error(std::string("error while reading: ") + std::strerror(tmp_errno));
+			throw BitcoinExchange::InvalidFileException(std::string("error while reading: ") + std::strerror(tmp_errno));
 		else if (!file.eof())
-			throw std::runtime_error("error while reading: unexpected read failure");
+			throw BitcoinExchange::InvalidFileException("error while reading: unexpected read failure");
 	}
 }
 
@@ -474,18 +476,25 @@ BitcoinExchange & BitcoinExchange::operator=(const BitcoinExchange & other)
  */
 void BitcoinExchange::loadDatabase(const std::string & file_path)
 {
-	std::ifstream	file;
-	std::string		line;
+	std::string			line;
+	std::ifstream		file;
+	unsigned int		file_line_number = 0;
+	std::stringstream	stream;
 
 	try
 	{
 		openFile(file_path, file);
 		validateCSVHeader(file, ",", std::make_pair("date", "exchange_rate"));
+		file_line_number++;
 
 		while (std::getline(file, line))
 		{
+			file_line_number++;
 			if (line.empty())
+			{
+				std::cerr << "Warning: database: line " << file_line_number << " is empty!" << std::endl;
 				continue ;
+			}
 
 			std::pair<std::string, double> entry = parseCSVLine(line, ",");
 			db_[entry.first] = entry.second;
@@ -493,9 +502,30 @@ void BitcoinExchange::loadDatabase(const std::string & file_path)
 
 		checkFileEnd(file);
 	}
+	catch (const InvalidFileException & e)
+	{
+		stream << "database file: " << e.what();
+		throw InvalidFileException(stream.str());
+	}
+	catch (const InvalidLineException & e)
+	{
+		stream << "line " << file_line_number << " in database: " << e.what();
+		throw InvalidLineException(stream.str());
+	}
+	catch (const InvalidValueException & e)
+	{
+		stream << "exchange rate in database: line " << file_line_number << ": " << e.what();
+		throw InvalidValueException( stream.str());
+	}
+	catch (const InvalidDateException & e)
+	{
+		stream << "date in database: line " << file_line_number << ": " << e.what();
+		throw InvalidDateException(stream.str());
+	}
 	catch (const std::exception & e)
 	{
-		throw InvalidFileException("'" + file_path + "': " + e.what());
+		stream << "unexpected exception during database loading: " << e.what();
+		std::runtime_error(stream.str());
 	}
 }
 
@@ -557,23 +587,14 @@ void BitcoinExchange::exchangeByFile(const std::string & file_path, const std::s
 
 // -------------------- EXCEPTIONS -------------------- //
 
-namespace
-{
-	std::string formatExceptionMsg(const std::string& defaultMsg, const std::string& msg) {
-		if (msg.empty())
-			return defaultMsg;
-		return defaultMsg + ": " + msg;
-	}
-}
-
 BitcoinExchange::InvalidLineException::InvalidLineException(const std::string & msg)
-	: std::runtime_error(formatExceptionMsg("bad input", msg)) {}
+	: std::runtime_error(msg) {}
 
 BitcoinExchange::InvalidDateException::InvalidDateException(const std::string & msg)
-	: std::runtime_error(formatExceptionMsg("bad date", msg)) {}
+	: std::runtime_error(msg) {}
 
 BitcoinExchange::InvalidValueException::InvalidValueException(const std::string & msg)
-	: std::runtime_error(formatExceptionMsg("bad value", msg)) {}
+	: std::runtime_error(msg) {}
 
 BitcoinExchange::InvalidFileException::InvalidFileException(const std::string & msg)
-	: std::runtime_error(formatExceptionMsg("bad file", msg)) {}
+	: std::runtime_error(msg) {}
