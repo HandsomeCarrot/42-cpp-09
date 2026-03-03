@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/03/03 19:42:33 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/03/03 20:23:19 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -547,6 +547,9 @@ void BitcoinExchange::loadDatabase(const std::string & file_path)
  */
 double BitcoinExchange::getRate(const std::string & date) const
 {
+	if (db_.empty())
+		throw std::runtime_error("database is empty");
+
 	validateDate(date);
 
 	std::map<std::string, double>::const_iterator i = db_.upper_bound(date);
