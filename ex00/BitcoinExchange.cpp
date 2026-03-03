@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/03/03 16:49:51 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/03/03 19:42:33 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -547,9 +547,19 @@ void BitcoinExchange::loadDatabase(const std::string & file_path)
  */
 double BitcoinExchange::getRate(const std::string & date) const
 {
-	//TODO
-	(void)date;
-	return (0);
+	validateDate(date);
+
+	std::map<std::string, double>::const_iterator i = db_.upper_bound(date);
+
+	if (i != db_.begin())
+		--i;
+
+	if (i->first > date)
+	{
+		throw InvalidDateException("date is too old");
+	}
+
+	return (i->second);
 }
 
 /**
