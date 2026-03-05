@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/03/03 20:23:19 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/03/05 17:12:16 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -530,20 +530,23 @@ void BitcoinExchange::loadDatabase(const std::string & file_path)
 }
 
 /**
- * @brief finds the rate for the given data
- *
- * Validates date string. Then it looks into the internal exchange_rates_ map
- * and searches for the latest bitcoin exchange rate in the database.
- * If the given date does not exist in the database, it will return the rate
- * of a older date nearest to the given date.
- *
- * @param date std::string, date to search the exchange-rate for, in <YYYY-MM-DD> format.
- *
- * @return double, the bitcoin exchange rate of that date
- *
- * @throw std::exception?, for incorrect date formatting
- *
- * @note if 'db_' is empty, throw/print an error
+ * @brief Retrieves the Bitcoin exchange rate for a given date.
+ * 
+ * Looks up the exchange rate in the database for the specified date.
+ * If an exact match is not found, returns the rate from the most recent
+ * date before the requested date.
+ * 
+ * @param date The date string in the format expected by the database
+ *             ("YYYY-MM-DD").
+ * 
+ * @return The Bitcoin exchange rate as a double for the given date
+ *         or the most recent available date before it.
+ * 
+ * @throw std::runtime_error If the database is empty.
+ * @throw InvalidDateException If the requested date is older than
+ *                             the earliest date in the database.
+ * 
+ * @note The date validation is performed by validateDate() method.
  */
 double BitcoinExchange::getRate(const std::string & date) const
 {
