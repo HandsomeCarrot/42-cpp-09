@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/03/05 17:12:16 by vpoka            ###   ########.fr       */
+/*   Updated: 2026/03/05 17:50:58 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -569,25 +569,22 @@ double BitcoinExchange::getRate(const std::string & date) const
 }
 
 /**
- * @brief get the money amount of the bitcoins
- *
- * Calls the 'getRate()' function to get the rate for that date.
- * Then it multiplies the 'bitcoin_amount' with that bitcoin rate.
- * That is the monetary value of that amount of bitcoins on that date.
- *
- * @param date std::string, date of the exchange rate
- * @param bitcoin_amount double, amount of bitcoins to exchange
- *
- * @return double, the monetary value of the bitcoins
- *
- * @note if 'db_' is empty, throw/print an error
+ * @brief Calculates the exchange value of a given amount of Bitcoin for a specified date.
+ * 
+ * @param date A string representing the date for which the exchange rate should be retrieved.
+ * @param bitcoin_amount The amount of Bitcoin to exchange. Must be non-negative.
+ * 
+ * @return The exchange value calculated by multiplying the Bitcoin amount with the 
+ *         exchange rate retrieved for the given date.
+ * 
+ * @throw std::runtime_error if bitcoin_amount is negative.
  */
 double BitcoinExchange::exchange(const std::string & date, double bitcoin_amount) const
 {
-	//TODO
-	(void)date;
-	(void)bitcoin_amount;
-	return (0);
+	if (bitcoin_amount < 0)
+		throw std::runtime_error("invalid bitcoin amount");
+
+	return (getRate(date) * bitcoin_amount);
 }
 
 /**
