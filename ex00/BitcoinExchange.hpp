@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   BitcoinExchange.hpp                                :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/02/19 14:46:10 by vpoka             #+#    #+#             */
-/*   Updated: 2026/02/23 00:42:53 by vpoka            ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef BITCOINEXCHANGE_HPP
 # define BITCOINEXCHANGE_HPP
 
@@ -38,7 +26,7 @@ public:
 	double	getRate(const std::string & date) const;
 
 	double	exchange(const std::string & date, double bitcoin_amount) const;
-	void	exchangeByFile(const std::string & file_path, const std::string & separator);
+	void	printExchangeByFile(const std::string & file_path, const std::string & separator);
 
 // -------------------- EXCEPTIONS -------------------- //
 

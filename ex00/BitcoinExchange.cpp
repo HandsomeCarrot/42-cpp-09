@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   BitcoinExchange.cpp                                :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/02/19 14:46:19 by vpoka             #+#    #+#             */
-/*   Updated: 2026/03/05 17:50:58 by vpoka            ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "BitcoinExchange.hpp"
 #include <cctype>		// std::isdigit()
 #include <cerrno>		// errno, ERANGE
@@ -248,30 +236,6 @@ namespace
 		if (errno == ERANGE)
 			throw BitcoinExchange::InvalidValueException(value_str + ": value out of range");
 
-		return (value);
-	}
-
-	/**
-	 * @brief Parses a string value and validates it against a maximum threshold.
-	 * 
-	 * Converts a string representation of a numeric value to a double and ensures
-	 * it does not exceed the specified maximum value.
-	 * 
-	 * @param value_str The string to parse into a double value
-	 * @param max_value The maximum allowed value threshold
-	 * 
-	 * @return The parsed double value if valid
-	 * 
-	 * @throw BitcoinExchange::InvalidValueException If the parsed value exceeds max_value
-	 * 
-	 * @note This function delegates to another parseValueString(const std::string&)
-	 *       overload for the actual string-to-double conversion
-	 */
-	double	parseValueString(const std::string & value_str, double max_value)
-	{
-		double value = parseValueString(value_str);
-		if (value > max_value)
-			throw BitcoinExchange::InvalidValueException(value_str + ": value out of range");
 		return (value);
 	}
 
@@ -582,20 +546,79 @@ double BitcoinExchange::getRate(const std::string & date) const
 double BitcoinExchange::exchange(const std::string & date, double bitcoin_amount) const
 {
 	if (bitcoin_amount < 0)
-		throw std::runtime_error("invalid bitcoin amount");
+		throw std::runtime_error("not enough bitcoins.");
+	else if (bitcoin_amount > 1000)
+		throw std::runtime_error("too many bitcoins.");
 
 	return (getRate(date) * bitcoin_amount);
 }
 
 /**
- * @brief ...
+ * @brief Processes an input file and prints the exchanged Bitcoin value for each valid entry.
+ * 
+ * Opens the file located at `file_path`, validates its header against the expected
+ * `date` and `value` columns using the provided separator, and then reads the file
+ * line by line. For each non-empty line, the method parses the date/value pair,
+ * computes the exchanged value with exchange(), and prints the result to the
+ * standard output.
+ * 
+ * Invalid data lines do not stop the processing. Instead, an error message
+ * containing the line number and the reason of the failure is written to the
+ * standard error stream, and the next line is processed.
+ * 
+ * @param file_path Path to the input file containing exchange requests.
+ * @param separator Delimiter expected between the `date` and `value` fields.
+ * 
+ * @throw std::runtime_error If the file cannot be processed due to an unexpected
+ *                           failure such as opening the file, validating the
+ *                           header, or detecting a stream error at the end of
+ *                           processing.
+ * 
+ * @note Empty lines are reported as input errors and skipped.
+ * @note Per-line parsing and exchange errors are handled locally so that
+ *       processing can continue for the rest of the file.
  */
-void BitcoinExchange::exchangeByFile(const std::string & file_path, const std::string & separator)
+void BitcoinExchange::printExchangeByFile(const std::string & file_path, const std::string & separator)
 {
-	//TODO
-	(void)file_path;
-	(void)separator;
-	(void)parseValueString("", 1000); //delete me
+	try
+	{
+		std::ifstream	file_stream;
+		std::string		line;
+		int				line_number = 0;
+
+		openFile(file_path, file_stream);
+		
+		validateCSVHeader(file_stream, separator, std::make_pair("date", "value"));
+
+		while (std::getline(file_stream, line))
+		{
+			line_number++;
+
+			if (line.empty())
+			{
+				std::cerr << "Error: input file: line " << line_number << ": empty line." << std::endl;
+				continue ;
+			}
+
+			try
+			{
+				std::pair<std::string, double>	entry = parseCSVLine(line, separator);
+				double							exchanged_bitcoins = exchange(entry.first, entry.second);
+
+				std::cout << entry.first << " => " << entry.second << " = " << exchanged_bitcoins << std::endl;
+			}
+			catch (const std::exception & e)
+			{
+				std::cerr << "Error: input file: line " << line_number << ": " << e.what() << std::endl;
+				continue ;
+			}
+		}
+		checkFileEnd(file_stream);
+	}
+	catch (const std::exception & e)
+	{
+		throw std::runtime_error(std::string("exchanging by file: unexpected exception occured: ") + e.what());
+	}
 }
 
 // -------------------- EXCEPTIONS -------------------- //
