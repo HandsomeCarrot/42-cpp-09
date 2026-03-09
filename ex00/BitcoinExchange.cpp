@@ -231,8 +231,6 @@ namespace
 
 		if (*endptr != '\0')
 			throw BitcoinExchange::InvalidValueException(value_str + ": contains invalid character");
-		if (value < 0)
-			throw BitcoinExchange::InvalidValueException(value_str + ": value not positive");
 		if (errno == ERANGE)
 			throw BitcoinExchange::InvalidValueException(value_str + ": value out of range");
 
@@ -461,6 +459,9 @@ void BitcoinExchange::loadDatabase(const std::string & file_path)
 			}
 
 			std::pair<std::string, double> entry = parseCSVLine(line, ",");
+			
+			if (entry.second < 0)
+				throw InvalidValueException("negative exchange rate.");
 			db_[entry.first] = entry.second;
 		}
 
@@ -546,9 +547,9 @@ double BitcoinExchange::getRate(const std::string & date) const
 double BitcoinExchange::exchange(const std::string & date, double bitcoin_amount) const
 {
 	if (bitcoin_amount < 0)
-		throw std::runtime_error("not enough bitcoins.");
+		throw std::runtime_error("negative bitcoin amount");
 	else if (bitcoin_amount > 1000)
-		throw std::runtime_error("too many bitcoins.");
+		throw std::runtime_error("bitcoin amount > 1000.");
 
 	return (getRate(date) * bitcoin_amount);
 }
