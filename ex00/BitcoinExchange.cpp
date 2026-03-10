@@ -35,9 +35,10 @@ namespace
 	 * @return A pair whose first element contains the text before the separator
 	 *         and whose second element contains the text after it.
 	 *
-	 * @throws BitcoinExchange::InvalidLineException If @p line is empty, if
-	 *         @p separator is empty, or if the separator does not occur in
+	 * @throws BitcoinExchange::InvalidLineException, if the separator does not occur in
 	 *         @p line.
+	 * 
+	 * @throws std::runtime_error, if @p line/separator is empty.
 	 *
 	 * @note If the separator appears more than once, only the first occurrence is
 	 *       used.
@@ -47,7 +48,7 @@ namespace
 		std::pair<std::string, std::string> line_pair;
 
 		if (line.empty() || separator.empty())
-			throw BitcoinExchange::InvalidLineException("empty");
+			throw std::runtime_error("splitLine(): incorrect usage");
 
 		std::string::size_type separator_pos = line.find(separator);
 
@@ -228,14 +229,14 @@ namespace
 	double	parseValueString(const std::string & value_str)
 	{
 		if (value_str.empty())
-			throw BitcoinExchange::InvalidValueException(value_str + ": empty");
+			throw BitcoinExchange::InvalidValueException("empty value string");
 
 		char * endptr;
 		errno = 0;
 		double value = std::strtod(value_str.c_str(), &endptr);
 
 		if (*endptr != '\0')
-			throw BitcoinExchange::InvalidValueException(value_str + ": contains invalid character");
+			throw BitcoinExchange::InvalidValueException(value_str + ": value string contains invalid character");
 		if (errno == ERANGE)
 			throw BitcoinExchange::InvalidValueException(value_str + ": value out of range");
 
@@ -604,7 +605,7 @@ void BitcoinExchange::printExchangeByFile(const std::string & file_path, const s
 
 			if (line.empty())
 			{
-				std::cerr << "Error: input file: line " << line_number << ": empty line." << std::endl;
+				std::cerr << "Error: input file: line " << line_number << ": empty line" << std::endl;
 				continue ;
 			}
 
