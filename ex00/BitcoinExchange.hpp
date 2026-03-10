@@ -9,7 +9,7 @@ class BitcoinExchange
 {
 // -------------------- VARIABLES -------------------- //
 private:
-	std::map<std::string, double>	db_; //more verbose name (e.g. database_, ...)?
+	std::map<std::string, double>	db_;
 
 // -------------------- ORTHODOX CANONICAL FORM -------------------- //
 public:
