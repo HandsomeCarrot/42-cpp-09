@@ -17,7 +17,7 @@ This module is split into three exercises:
 
 ## What this project demonstrates
 
-* C++98 development under strict compilation rules (`-Wall -Wextra -Werror`)
+* C++98 development under strict compilation rules (`-Wall -Wextra -Werror -std=c++98`)
 * Robust file parsing and input validation
 * Careful error handling and edge-case management
 * Practical use of STL containers in problem-specific contexts
@@ -117,8 +117,6 @@ Notes:
 
 ### ex00 — Bitcoin Exchange
 
-Main focus:
-
 * CSV data loading
 * date parsing and validation
 * numeric input validation
@@ -127,8 +125,6 @@ Main focus:
 
 ### ex01 — Reverse Polish Notation
 
-Main focus:
-
 * stack-based evaluation
 * token validation
 * operator application order
@@ -136,16 +132,12 @@ Main focus:
 
 ### ex02 — PmergeMe
 
-Main focus:
-
 * merge-insert / Ford-Johnson sorting logic
 * comparing behavior across two STL containers
 * measuring and displaying execution time
 * handling larger integer input ranges correctly
 
 ## Results
-
-This section is intentionally left as a placeholder and will be updated after evaluation.
 
 * **Status:** *In progress*
 * **Final grade:** *TBD*
