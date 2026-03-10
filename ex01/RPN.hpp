@@ -1,20 +1,20 @@
 #ifndef RPN_HPP
 # define RPN_HPP
 
-//# include <iostream> Uncomment this if you use the output stream operator
+#include <list>
+#include <stack>
+#include <string>
 
 class RPN
 {
 private:
-protected:
+	std::stack<int, std::list<int> > _stack;
 public:
 	RPN(void);
-	//RPN(<all parameters of class>);
-	RPN(const RPN &other);
+	RPN(const RPN & other);
 	~RPN(void);
 
-	RPN	&operator=(const RPN &other);
-};
+	RPN	& operator=(const RPN & other);
 
 //std::ostream	&operator<<(std::ostream &os, const RPN &c);
 
