@@ -50,3 +50,6 @@ btc
 RPN
 #ex02
 PmergeMe
+
+# tests
+ex00/tests/
