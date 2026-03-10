@@ -15,8 +15,6 @@ namespace
 		if (input.empty())
 			throw std::runtime_error("invalid input: empty argument");
 
-		// parse input
-
 		return (input);
 	}
 }
