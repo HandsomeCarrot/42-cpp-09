@@ -1,3 +1,4 @@
+#include "RPN.hpp"
 #include <exception>	//std::exception
 #include <iostream>		//std::cerr
 #include <stdexcept>	//std::runtime_error
@@ -27,7 +28,9 @@ int main(int argc, char ** argv)
 
 		input = parseInput(argc, argv);
 
-		std::cout << input << std::endl;
+		RPN rpn;
+		
+		rpn.evaluate(input);
 	}
 	catch (const std::exception & e)
 	{

@@ -16,7 +16,8 @@ public:
 
 	RPN	& operator=(const RPN & other);
 
-//std::ostream	&operator<<(std::ostream &os, const RPN &c);
+	int	evaluate(const std::string & expression);
+};
 
 # define RESET	"\033[0m"
 # define YELLOW	"\033[33m"

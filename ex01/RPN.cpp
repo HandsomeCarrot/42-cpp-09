@@ -1,4 +1,8 @@
 #include "RPN.hpp"
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <stdexcept>
 
 /**
  * @brief default constructor
@@ -45,18 +49,20 @@ RPN & RPN::operator=(const RPN & other)
 	return (*this);
 }
 
-/**
- * @brief output stream operator
- *
- * @param os reference to the outputstream
- * @param class reference to the class object
- *
- * @return reference to the output stream
-*/
-/*
-std::ostream	&operator<<(std::ostream &os, const RPN &c)
+int RPN::evaluate(const std::string & expression)
 {
-	os << "some info about RPN";
-	return (os);
+	if (expression.empty())
+		throw std::runtime_error("empty expression");
+
+	std::istringstream	stream(expression);
+	std::string			token;
+
+	while (stream >> token)
+	{
+		if (token.length() > 1)
+			throw std::runtime_error("encountered unexpected token '" + token + "'");
+		std::cout << token << std::endl;
+	}
+
+	return (0);
 }
-*/
