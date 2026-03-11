@@ -30,7 +30,7 @@ int main(int argc, char ** argv)
 
 		RPN rpn;
 		
-		rpn.evaluate(input);
+		std::cout << rpn.evaluate(input) << std::endl;
 	}
 	catch (const std::exception & e)
 	{
