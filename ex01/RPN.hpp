@@ -8,7 +8,9 @@
 class RPN
 {
 private:
-	std::stack<int, std::list<int> > _stack;
+	typedef std::stack<int, std::list<int> > t_rpn_stack;
+
+	t_rpn_stack _stack;
 public:
 	RPN(void);
 	RPN(const RPN & other);

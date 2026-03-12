@@ -1,7 +1,9 @@
 #include "RPN.hpp"
 #include <cctype>
 #include <iostream>
+#include <list>
 #include <sstream>
+#include <stack>
 #include <string>
 #include <stdexcept>
 
@@ -52,6 +54,8 @@ RPN & RPN::operator=(const RPN & other)
 
 int RPN::evaluate(const std::string & expression)
 {
+	_stack = t_rpn_stack();
+
 	if (expression.empty())
 		throw std::runtime_error("empty expression");
 
@@ -63,7 +67,7 @@ int RPN::evaluate(const std::string & expression)
 		if (token.length() > 1)
 			throw std::runtime_error("unexpected token '" + token + "': token too long");
 		
-		if (std::isdigit(token[0]))
+		if (std::isdigit(static_cast<unsigned char>(token[0])))
 			_stack.push(token[0] - '0');
 		else
 		{
@@ -74,20 +78,33 @@ int RPN::evaluate(const std::string & expression)
 			_stack.pop();
 			int a = _stack.top();
 			_stack.pop();
+			
+			int r = 0;
 
 			switch (token[0])
 			{
 				case '+':
-					_stack.push(a + b);
+					r = a + b;
+					if (r < a)
+						throw std::runtime_error("addition: integer overflow");
+					_stack.push(r);
 					continue ;
 				case '-':
-					_stack.push(a - b);
+					r = a - b;
+					if (r > a)
+						throw std::runtime_error("subtraction: integer underflow");
+					_stack.push(r);
 					continue ;
 				case '/':
+					if (b == 0)
+						throw std::runtime_error("division by 0");
 					_stack.push(a / b);
 					continue ;
 				case '*':
-					_stack.push(a * b);
+					r = a * b;
+					if (r < a)
+						throw std::runtime_error("multiplication: integer overflow");
+					_stack.push(r);
 					continue ;
 				default:
 					throw std::runtime_error("unexpected token '" + token + "': invalid operator");
