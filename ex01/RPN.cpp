@@ -1,9 +1,9 @@
 #include "RPN.hpp"
-#include <cctype>
-#include <limits>
-#include <sstream>
-#include <string>
-#include <stdexcept>
+#include <cctype>		// std::isdigit()
+#include <limits>		// std::numeric_limits<int>::min/max()
+#include <sstream>		// std::istringstream
+#include <string>		// std::string
+#include <stdexcept>	// std::runtime_error
 
 /**
  * @brief default constructor
@@ -52,6 +52,18 @@ RPN & RPN::operator=(const RPN & other)
 
 namespace
 {
+	/**
+	 * @brief check long long calculation result for int overflow
+	 *
+	 * Operations are performed in `long long` first to detect overflow before the
+	 * value is converted back to an 'int'.
+	 *
+	 * @param value, arithmetic result to validate.
+	 *
+	 * @return The validated result converted to `int`.
+	 *
+	 * @throws std::runtime_error If @p value is outside the `int` range.
+	 */
 	int checkedResult(long long value)
 	{
 		if (value < std::numeric_limits<int>::min() || value > std::numeric_limits<int>::max())
@@ -60,6 +72,22 @@ namespace
 		return (static_cast<int>(value));
 	}
 
+	/**
+	 * @brief Apply a binary arithmetic operator to two operands.
+	 *
+	 * The operands are evaluated in the order `a op b`, which matches the order
+	 * in which they are popped from the RPN stack. The final result is validated
+	 * with `checkedResult()` before it is returned.
+	 *
+	 * @param op Arithmetic operator to apply.
+	 * @param a Left-hand operand.
+	 * @param b Right-hand operand.
+	 *
+	 * @return The computed result.
+	 *
+	 * @throws std::runtime_error, If @p op is unsupported, if division by zero is
+	 *         attempted, or if the result overflows `int`.
+	 */
 	int applyOperator(char op, int a, int b)
 	{
 		DEBUG_MSG("op: " << a << ' ' << op << ' ' << b);
@@ -83,12 +111,32 @@ namespace
 	}
 }
 
+/**
+ * @brief Push a single-digit operand onto the evaluation stack.
+ *
+ * The character is expected to be an ASCII decimal digit. Its numeric value is
+ * obtained by subtracting `'0'` and then stored on the internal stack.
+ *
+ * @param c Digit character representing the operand to push.
+ */
 void RPN::processOperand(char c)
 {
 	_stack.push(c - '0');
 	DEBUG_MSG("push: " << (c - '0'));
 }
 
+/**
+ * @brief Consume an operator token and apply it to the top stack operands.
+ *
+ * This function accepts only four operator types (+, -, *, /). It
+ * pops the two topmost operands, computes the result, and pushes that result
+ * back onto the stack.
+ *
+ * @param token Single-character token containing the operator.
+ *
+ * @throws std::runtime_error If the operator is invalid or if fewer than two
+ *         operands are available on the stack.
+ */
 void RPN::processOperator(const std::string & token)
 {
 	char op = token[0];
@@ -118,6 +166,22 @@ void RPN::processOperator(const std::string & token)
 	}
 }
 
+/**
+ * @brief Evaluate a whitespace-separated reverse Polish notation expression.
+ *
+ * The expression is read token by token. Single-digit numeric tokens are pushed
+ * as operands, while operator tokens trigger a stack reduction. When parsing
+ * finishes, exactly one value must remain on the stack for the expression to be
+ * considered valid.
+ *
+ * @param expression Expression to evaluate.
+ *
+ * @return The final result left on the stack.
+ *
+ * @throws std::runtime_error, If the expression is empty, contains invalid or
+ *         multi-character tokens, performs an invalid operation, or leaves an
+ *         incorrect number of operands on the stack.
+ */
 int RPN::evaluate(const std::string & expression)
 {
 	std::istringstream	expression_stream(expression);
