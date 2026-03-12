@@ -11,6 +11,9 @@ private:
 	typedef std::stack<int, std::list<int> > t_rpn_stack;
 
 	t_rpn_stack _stack;
+
+	void	processOperand(char c);
+	void	processOperator(const std::string & token, std::size_t tokenIndex);
 public:
 	RPN(void);
 	RPN(const RPN & other);

@@ -61,19 +61,11 @@ namespace
 		return (stream.str());
 	}
 
-	std::runtime_error tokenError(std::size_t tokenIndex, const std::string & message)
-	{
-		std::string fullMessage = buildTokenMessage(tokenIndex, message);
-
-		return (std::runtime_error(fullMessage));
-	}
-
 	int checkedResult(long long value, const char * operation, std::size_t tokenIndex)
 	{
 		if (value < std::numeric_limits<int>::min() || value > std::numeric_limits<int>::max())
-		{
-			throw tokenError(tokenIndex, std::string(operation) + " overflow");
-		}
+			throw std::runtime_error(buildTokenMessage(tokenIndex, std::string(operation) + " overflow"));
+
 		return (static_cast<int>(value));
 	}
 
@@ -89,20 +81,54 @@ namespace
 			case '*':
 				return (checkedResult(static_cast<long long>(a) * b, "multiplication", tokenIndex));
 			case '/':
+			{
 				if (b == 0)
-					throw tokenError(tokenIndex, "division by zero");
-				if (a == std::numeric_limits<int>::min() && b == -1)
-					throw tokenError(tokenIndex, "division overflow");
-				return (a / b);
+					throw std::runtime_error(buildTokenMessage(tokenIndex, "division by zero"));
+				return (checkedResult(static_cast<long long>(a) / b, "division", tokenIndex));
+			}
 			default:
-				throw tokenError(tokenIndex, std::string("'") + op + "': invalid operator");
+				throw std::runtime_error(buildTokenMessage(tokenIndex, std::string("'") + op + "': invalid operator"));
 		}
+	}
+}
+
+void RPN::processOperand(char c)
+{
+	_stack.push(c - '0');
+	DEBUG_MSG("push: " << (c - '0'));
+}
+
+void RPN::processOperator(const std::string & token, std::size_t tokenIndex)
+{
+	char op = token[0];
+
+	switch (op)
+	{
+		case '+':
+		case '-':
+		case '*':
+		case '/':
+		{
+			if (_stack.size() < 2)
+				throw std::runtime_error(buildTokenMessage(tokenIndex, "'" + token + "': need 2 operands"));
+
+			int b = _stack.top();
+			_stack.pop();
+			int a = _stack.top();
+			_stack.pop();
+			int result = applyOperator(op, a, b, tokenIndex);
+
+			_stack.push(result);
+			DEBUG_MSG("= " << result);
+			break ;
+		}
+		default:
+			throw std::runtime_error(buildTokenMessage(tokenIndex, "'" + token + "': invalid operator"));
 	}
 }
 
 int RPN::evaluate(const std::string & expression)
 {
-	DEBUG_MSG("eval: \"" << expression << "\"");
 	_stack = t_rpn_stack();
 
 	if (expression.empty())
@@ -119,44 +145,16 @@ int RPN::evaluate(const std::string & expression)
 		++tokenIndex;
 
 		if (token.length() > 1)
-			throw tokenError(tokenIndex, "'" + token + "': multi-char token");
-		
+			throw std::runtime_error(buildTokenMessage(tokenIndex, "'" + token + "': multi-char token"));
+
 		if (std::isdigit(static_cast<unsigned char>(token[0])))
-		{
-			_stack.push(token[0] - '0');
-			DEBUG_MSG("push: " << (token[0] - '0'));
-		}
+			processOperand(token[0]);
 		else
-		{
-			switch (token[0])
-			{
-				case '+':
-				case '-':
-				case '*':
-				case '/':
-				{
-					if (_stack.size() < 2)
-						throw tokenError(tokenIndex, "'" + token + "': need 2 operands");
-
-					int b = _stack.top();
-					_stack.pop();
-					int a = _stack.top();
-					_stack.pop();
-					int result = applyOperator(token[0], a, b, tokenIndex);
-
-					_stack.push(result);
-					DEBUG_MSG("= " << result);
-					break ;
-				}
-				default:
-					throw tokenError(tokenIndex, "'" + token + "': invalid operator");
-			}
-		}
+			processOperator(token, tokenIndex);
 	}
 
 	if (!hasTokens)
 		throw std::runtime_error("empty expression");
-
 	if (_stack.size() != 1)
 		throw std::runtime_error("too many operands: missing operator");
 
