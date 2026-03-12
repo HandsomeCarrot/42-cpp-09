@@ -54,8 +54,7 @@ namespace
 {
 	int checkedResult(long long value, const char * operation)
 	{
-		if (value < std::numeric_limits<int>::min()
-			|| value > std::numeric_limits<int>::max())
+		if (value < std::numeric_limits<int>::min() || value > std::numeric_limits<int>::max())
 			throw std::runtime_error(std::string(operation) + ": result out of range");
 		return (static_cast<int>(value));
 	}
