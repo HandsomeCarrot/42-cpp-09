@@ -1,6 +1,7 @@
 #ifndef RPN_HPP
 # define RPN_HPP
 
+#include <cstddef>	//std::size_t
 #include <list>
 #include <stack>
 #include <string>
@@ -13,7 +14,7 @@ private:
 	t_rpn_stack _stack;
 
 	void	processOperand(char c);
-	void	processOperator(const std::string & token, std::size_t tokenIndex);
+	void	processOperator(const std::string & token, std::size_t token_index);
 public:
 	RPN(void);
 	RPN(const RPN & other);
