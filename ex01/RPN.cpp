@@ -1,6 +1,5 @@
 #include "RPN.hpp"
 #include <cctype>
-#include <cstddef>
 #include <limits>
 #include <sstream>
 #include <string>
@@ -53,41 +52,33 @@ RPN & RPN::operator=(const RPN & other)
 
 namespace
 {
-	std::string buildTokenMessage(std::size_t token_index, const std::string & message)
-	{
-		std::ostringstream stream;
-
-		stream << "token " << token_index << ": " << message;
-		return (stream.str());
-	}
-
-	int checkedResult(long long value, const char * operation, std::size_t token_index)
+	int checkedResult(long long value)
 	{
 		if (value < std::numeric_limits<int>::min() || value > std::numeric_limits<int>::max())
-			throw std::runtime_error(buildTokenMessage(token_index, std::string(operation) + " overflow"));
+			throw std::runtime_error("result out of bounds");
 
 		return (static_cast<int>(value));
 	}
 
-	int applyOperator(char op, int a, int b, std::size_t token_index)
+	int applyOperator(char op, int a, int b)
 	{
 		DEBUG_MSG("op: " << a << ' ' << op << ' ' << b);
 		switch (op)
 		{
 			case '+':
-				return (checkedResult(static_cast<long long>(a) + b, "addition", token_index));
+				return (checkedResult(static_cast<long long>(a) + b));
 			case '-':
-				return (checkedResult(static_cast<long long>(a) - b, "subtraction", token_index));
+				return (checkedResult(static_cast<long long>(a) - b));
 			case '*':
-				return (checkedResult(static_cast<long long>(a) * b, "multiplication", token_index));
+				return (checkedResult(static_cast<long long>(a) * b));
 			case '/':
 			{
 				if (b == 0)
-					throw std::runtime_error(buildTokenMessage(token_index, "division by zero"));
-				return (checkedResult(static_cast<long long>(a) / b, "division", token_index));
+					throw std::runtime_error("division by zero");
+				return (checkedResult(static_cast<long long>(a) / b));
 			}
 			default:
-				throw std::runtime_error(buildTokenMessage(token_index, std::string("'") + op + "': invalid operator"));
+				throw std::runtime_error(std::string("'") + op + "': invalid operator");
 		}
 	}
 }
@@ -98,7 +89,7 @@ void RPN::processOperand(char c)
 	DEBUG_MSG("push: " << (c - '0'));
 }
 
-void RPN::processOperator(const std::string & token, std::size_t token_index)
+void RPN::processOperator(const std::string & token)
 {
 	char op = token[0];
 
@@ -110,27 +101,26 @@ void RPN::processOperator(const std::string & token, std::size_t token_index)
 		case '/':
 		{
 			if (_stack.size() < 2)
-				throw std::runtime_error(buildTokenMessage(token_index, "'" + token + "': need 2 operands"));
+				throw std::runtime_error("'" + token + "': need 2 operands");
 
 			int b = _stack.top();
 			_stack.pop();
 			int a = _stack.top();
 			_stack.pop();
-			int result = applyOperator(op, a, b, token_index);
+			int result = applyOperator(op, a, b);
 
 			_stack.push(result);
 			DEBUG_MSG("= " << result);
 			break ;
 		}
 		default:
-			throw std::runtime_error(buildTokenMessage(token_index, "'" + token + "': invalid operator"));
+			throw std::runtime_error("'" + token + "': invalid operator");
 	}
 }
 
 int RPN::evaluate(const std::string & expression)
 {
 	std::istringstream	expression_stream(expression);
-	std::size_t			token_index = 0;
 	std::string			token;
 	bool				has_tokens = false;
 
@@ -139,15 +129,14 @@ int RPN::evaluate(const std::string & expression)
 	while (expression_stream >> token)
 	{
 		has_tokens = true;
-		++token_index;
 
 		if (token.length() > 1)
-			throw std::runtime_error(buildTokenMessage(token_index, "'" + token + "': multi-char token"));
+			throw std::runtime_error("'" + token + "': multi-char token");
 
 		if (std::isdigit(static_cast<unsigned char>(token[0])))
 			processOperand(token[0]);
 		else
-			processOperator(token, token_index);
+			processOperator(token);
 	}
 
 	if (!has_tokens)
