@@ -1,9 +1,7 @@
 #include "RPN.hpp"
 #include <cctype>
-#include <iostream>
-#include <list>
+#include <limits>
 #include <sstream>
-#include <stack>
 #include <string>
 #include <stdexcept>
 
@@ -52,6 +50,38 @@ RPN & RPN::operator=(const RPN & other)
 	return (*this);
 }
 
+namespace
+{
+	int checkedResult(long long value, const char * operation)
+	{
+		if (value < std::numeric_limits<int>::min()
+			|| value > std::numeric_limits<int>::max())
+			throw std::runtime_error(std::string(operation) + ": result out of range");
+		return (static_cast<int>(value));
+	}
+
+	int applyOperator(char op, int a, int b)
+	{
+		switch (op)
+		{
+			case '+':
+				return (checkedResult(static_cast<long long>(a) + b, "addition"));
+			case '-':
+				return (checkedResult(static_cast<long long>(a) - b, "subtraction"));
+			case '*':
+				return (checkedResult(static_cast<long long>(a) * b, "multiplication"));
+			case '/':
+				if (b == 0)
+					throw std::runtime_error("division by 0");
+				if (a == std::numeric_limits<int>::min() && b == -1)
+					throw std::runtime_error("division: result out of range");
+				return (a / b);
+			default:
+				throw std::runtime_error(std::string("unexpected token '") + op + "': invalid operator");
+		}
+	}
+}
+
 int RPN::evaluate(const std::string & expression)
 {
 	_stack = t_rpn_stack();
@@ -61,9 +91,12 @@ int RPN::evaluate(const std::string & expression)
 
 	std::istringstream	stream(expression);
 	std::string			token;
+	bool				hasTokens = false;
 
 	while (stream >> token)
 	{
+		hasTokens = true;
+
 		if (token.length() > 1)
 			throw std::runtime_error("unexpected token '" + token + "': token too long");
 		
@@ -71,49 +104,35 @@ int RPN::evaluate(const std::string & expression)
 			_stack.push(token[0] - '0');
 		else
 		{
-			if (_stack.size() < 2)
-				throw std::runtime_error("unexpected token '" + token + "': expected a digit");
-
-			int b = _stack.top();
-			_stack.pop();
-			int a = _stack.top();
-			_stack.pop();
-			
-			int r = 0;
-
 			switch (token[0])
 			{
 				case '+':
-					r = a + b;
-					if (r < a)
-						throw std::runtime_error("addition: integer overflow");
-					_stack.push(r);
-					continue ;
 				case '-':
-					r = a - b;
-					if (r > a)
-						throw std::runtime_error("subtraction: integer underflow");
-					_stack.push(r);
-					continue ;
-				case '/':
-					if (b == 0)
-						throw std::runtime_error("division by 0");
-					_stack.push(a / b);
-					continue ;
 				case '*':
-					r = a * b;
-					if (r < a)
-						throw std::runtime_error("multiplication: integer overflow");
-					_stack.push(r);
+				case '/':
+				{
+					if (_stack.size() < 2)
+						throw std::runtime_error("unexpected token '" + token + "': not enough operands");
+
+					int b = _stack.top();
+					_stack.pop();
+					int a = _stack.top();
+					_stack.pop();
+					_stack.push(applyOperator(token[0], a, b));
+
 					continue ;
+				}
 				default:
 					throw std::runtime_error("unexpected token '" + token + "': invalid operator");
 			}
 		}
 	}
 
+	if (!hasTokens)
+		throw std::runtime_error("empty expression");
+
 	if (_stack.size() != 1)
-		throw std::runtime_error("not enough operations");
+		throw std::runtime_error("too many operands");
 
 	return (_stack.top());
 }
