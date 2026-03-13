@@ -11,7 +11,7 @@ SANITIZE_FLAGS := $(DB_FLAGS) -fsanitize=address,leak,undefined
 INCLUDE := -Iinclude -Iinclude/helpers
 COMP := $(CXX) $(CXXFLAGS) $(INCLUDE)
 
-SRCS :=	main.cpp
+SRCS :=	main.cpp PmergeMe.cpp
 
 B := build
 OBJS := $(SRCS:%.cpp=$(B)/%.o)

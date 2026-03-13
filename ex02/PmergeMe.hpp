@@ -22,11 +22,12 @@ private:
 private:
 	PmergeMe(void);
 public:
-	PmergeMe(const std::string & value_string);
 	PmergeMe(const PmergeMe &other);
 	~PmergeMe(void);
 
 	PmergeMe	&operator=(const PmergeMe &other);
+
+	PmergeMe(const std::string & value_string);
 
 // ----- Getters ----- //
 public:
