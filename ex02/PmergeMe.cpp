@@ -1,16 +1,17 @@
 #include "PmergeMe.hpp"
-#include <cctype>		//std::isspace
 #include <cerrno>		//errno, ERANGE
 #include <cstdlib>		//std::strtol
 #include <iostream>		//std::cerr/cout/endl
 #include <limits>		//std::numeric_limits
-#include <sstream>
+#include <sstream>		//std::istringstream
 #include <stdexcept>	//std::runtime_error
 
 /**
  * @brief default constructor
 */
-PmergeMe::PmergeMe(void)
+PmergeMe::PmergeMe(void) :
+	_vector_sorted(false),
+	_deque_sorted(false)
 {
 	DEBUG_MSG("PmergeMe default constructor called");
 }
@@ -57,50 +58,77 @@ PmergeMe	&PmergeMe::operator=(const PmergeMe &other)
 	return (*this);
 }
 
+namespace
+{
+	/**
+	 * @brief Converts a single token into a non-negative int value.
+	 *
+	 * @param token string token extracted from the input sequence
+	 *
+	 * @return the parsed integer value
+	 *
+	 * @throws std::runtime_error if @p token contains non-numeric characters,
+	 * represents a value outside the `int` range, or represents a negative
+	 * number
+	 */
+	int	parseValueToken(const std::string & token)
+	{
+		char * end = NULL;
+		long parsed_value;
+
+		errno = 0;
+		parsed_value = std::strtol(token.c_str(), &end, 10);
+
+		if (end == token.c_str() || *end != '\0')
+			throw std::runtime_error("non-numeric character encountered: " + token);
+		else if (errno == ERANGE
+			|| parsed_value < 0
+			|| parsed_value > std::numeric_limits<int>::max())
+			throw std::runtime_error("number out of range: " + token);
+
+		return (static_cast<int>(parsed_value));
+	}
+}
+
 /**
  * @brief parameterized constructor
  * 
- * Parses the given string into both containers (vector, deque).
+ * Parses a whitespace-separated sequence of non-negative integers into both
+ * internal containers while preserving the input order.
+ *
+ * The constructor leaves both sorted-status flags set to false.
+ *
+ * @param value_sequence string containing the values to store
  * 
- * @throws ...
- *   - @p value_string is empty/just whitespaces
- *   - @p value_string has non numeric characters
- *   - integer overflow occurs
+ * @throws std::runtime_error
+ *   - if @p value_sequence
+ *     - is empty
+ *     - contains only whitespaces
+ *     - contains a token with non-numeric characters
+ *     - contains a value outside the `int` range
+ *     - contains a negative number
  */
-PmergeMe::PmergeMe(const std::string & value_string_collection)
+PmergeMe::PmergeMe(const std::string & value_sequence) :
+	_vector_sorted(false),
+	_deque_sorted(false)
 {
 	DEBUG_MSG("PmergeMe parameterized constructor called");
 
-	std::istringstream	value_string_collection_stream(value_string_collection);
-	std::string			value_string;
+	std::istringstream	token_stream(value_sequence);
+	std::string			token;
 
-	while (value_string_collection_stream >> value_string)
+	while (token_stream >> token)
 	{
-		char * end = NULL;
-		errno = 0;
+		int	value = parseValueToken(token);
 
-		long l_value = std::strtol(value_string.c_str(), &end, 10);
-
-		if (errno == ERANGE
-			|| l_value < std::numeric_limits<int>::min()
-			|| l_value > std::numeric_limits<int>::max())
-			throw std::runtime_error("number out of range: " + value_string);
-		else if (end != value_string.c_str() + value_string.length())
-			break ;
-
-		int value = static_cast<int>(l_value);
-		
-		if (value < 0)
-			throw std::runtime_error("negative number in sequence: " + value_string);
-	
-		DEBUG_MSG("adding to containers: " << value);
+		DEBUG_MSG("pushed: " << value);
 
 		_vector_container.push_back(value);
 		_deque_container.push_back(value);
 	}
 
-	if (value_string_collection_stream && !value_string.empty())
-		throw std::runtime_error("non-numeric character encountered: " + value_string);
+	if (_vector_container.empty())
+		throw std::runtime_error("sequence is empty");
 }
 
 const std::vector<int> PmergeMe::getVectorContainer(void) const

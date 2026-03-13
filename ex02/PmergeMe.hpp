@@ -27,7 +27,7 @@ public:
 
 	PmergeMe	&operator=(const PmergeMe &other);
 
-	PmergeMe(const std::string & value_string);
+	PmergeMe(const std::string & value_sequence);
 
 // ----- Getters ----- //
 public:
