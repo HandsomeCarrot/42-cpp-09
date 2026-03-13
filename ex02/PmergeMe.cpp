@@ -4,6 +4,7 @@
 #include <cstdlib>		//std::strtol
 #include <iostream>		//std::cerr/cout/endl
 #include <limits>		//std::numeric_limits
+#include <sstream>
 #include <stdexcept>	//std::runtime_error
 
 /**
@@ -66,43 +67,40 @@ PmergeMe	&PmergeMe::operator=(const PmergeMe &other)
  *   - @p value_string has non numeric characters
  *   - integer overflow occurs
  */
-PmergeMe::PmergeMe(const std::string & value_string)
+PmergeMe::PmergeMe(const std::string & value_string_collection)
 {
 	DEBUG_MSG("PmergeMe parameterized constructor called");
 
-	const char * iter = value_string.c_str();
+	std::istringstream	value_string_collection_stream(value_string_collection);
+	std::string			value_string;
 
-	while (*iter != '\0')
+	while (value_string_collection_stream >> value_string)
 	{
 		char * end = NULL;
 		errno = 0;
 
-		long l_value = std::strtol(iter, &end, 10);
+		long l_value = std::strtol(value_string.c_str(), &end, 10);
 
 		if (errno == ERANGE
 			|| l_value < std::numeric_limits<int>::min()
 			|| l_value > std::numeric_limits<int>::max())
-			throw std::runtime_error("number out of range");
-		else if (iter == end)
+			throw std::runtime_error("number out of range: " + value_string);
+		else if (end != value_string.c_str() + value_string.length())
 			break ;
 
 		int value = static_cast<int>(l_value);
 		
 		if (value < 0)
-			throw std::runtime_error("negative number in sequence");
+			throw std::runtime_error("negative number in sequence: " + value_string);
 	
 		DEBUG_MSG("adding to containers: " << value);
+
 		_vector_container.push_back(value);
 		_deque_container.push_back(value);
-
-		iter = end;
 	}
 
-	while (std::isspace(static_cast<unsigned char>(*iter)))
-		++iter;
-
-	if (*iter != '\0')
-		throw std::runtime_error("non-numeric character encountered");
+	if (value_string_collection_stream && !value_string.empty())
+		throw std::runtime_error("non-numeric character encountered: " + value_string);
 }
 
 const std::vector<int> PmergeMe::getVectorContainer(void) const
