@@ -1,23 +1,32 @@
 #include "PmergeMe.hpp"
-//#include <iostream> if output stream operator will be used
+#include <iostream>
 
 /**
  * @brief default constructor
 */
-PmergeMe::PmergeMe(void)
+PmergeMe::PmergeMe(void) :
+	_vector_sorted(false),
+	_deque_sorted(false)
 {
 	DEBUG_MSG("PmergeMe default constructor called");
 }
 
 /**
  * @brief parameterized constructor
-*/
-/*
-PmergeMe::PmergeMe(<all parameters of class>)
+ * 
+ * Parses the given string into both containers (vector, deque).
+ * 
+ * @throws ...
+ *   - @p value_string is empty/just whitespaces
+ *   - @p value_string has non numeric characters
+ *   - integer overflow occurs
+ */
+PmergeMe::PmergeMe(const std::string & value_string)
 {
 	DEBUG_MSG("PmergeMe parameterized constructor called");
+	//TODO
+	(void)value_string;
 }
-*/
 
 /**
  * @brief copy constructor
@@ -27,6 +36,10 @@ PmergeMe::PmergeMe(<all parameters of class>)
 PmergeMe::PmergeMe(const PmergeMe &other)
 {
 	DEBUG_MSG("PmergeMe copy constructor called");
+	this->_vector_container = other._vector_container;
+	this->_vector_sorted = other._vector_sorted;
+	this->_deque_container = other._deque_container;
+	this->_deque_sorted = other._deque_sorted;
 }
 
 /**
@@ -49,9 +62,32 @@ PmergeMe	&PmergeMe::operator=(const PmergeMe &other)
 	DEBUG_MSG("PmergeMe assignment operator called");
 	if (this != &other)
 	{
-
+		this->_vector_container = other._vector_container;
+		this->_vector_sorted = other._vector_sorted;
+		this->_deque_container = other._deque_container;
+		this->_deque_sorted = other._deque_sorted;
 	}
 	return (*this);
+}
+
+const std::vector<int> PmergeMe::getVectorContainer(void) const
+{
+	return (_vector_container);
+}
+
+const std::deque<int> PmergeMe::getDequeContainer(void) const
+{
+	return (_deque_container);
+}
+
+bool PmergeMe::getVectorSortedStatus(void) const
+{
+	return (_vector_sorted);
+}
+
+bool PmergeMe::getDequeSortedStatus(void) const
+{
+	return (_deque_sorted);
 }
 
 /** 
@@ -62,10 +98,9 @@ PmergeMe	&PmergeMe::operator=(const PmergeMe &other)
  * 
  * @return reference to the output stream
 */
-/*
 std::ostream	&operator<<(std::ostream &os, const PmergeMe &c)
 {
-	os << "some info about PmergeMe";
+	//TODO
+	(void)c;
 	return (os);
 }
-*/

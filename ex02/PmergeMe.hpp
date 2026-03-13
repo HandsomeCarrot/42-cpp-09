@@ -1,22 +1,52 @@
 #ifndef PMERGEME_HPP
 # define PMERGEME_HPP
 
-//# include <iostream> Uncomment this if you use the output stream operator
+#include <deque>
+#include <ostream>	//std::ostream
+#include <string>
+#include <vector>
 
 class PmergeMe
 {
+// ----- Variables ----- //
 private:
-protected:
-public:
+	std::vector<int>	_vector_container;
+	bool				_vector_sorted;
+	//timer result for vector
+
+	std::deque<int>	_deque_container;
+	bool			_deque_sorted;
+	//timer result for deque
+
+// ----- De/Constructors ----- //
+private:
 	PmergeMe(void);
-	//PmergeMe(<all parameters of class>);
+public:
+	PmergeMe(const std::string & value_string);
 	PmergeMe(const PmergeMe &other);
 	~PmergeMe(void);
 
 	PmergeMe	&operator=(const PmergeMe &other);
+
+// ----- Getters ----- //
+public:
+	const std::vector<int>	getVectorContainer(void) const;
+	const std::deque<int>	getDequeContainer(void) const;
+	
+	bool	getVectorSortedStatus(void) const;
+	bool	getDequeSortedStatus(void) const;
+
+	//TODO something	getVectorTimer(void) const;
+	//TODO something	getDequeTimer(void) const;
+
+// ----- Functions ----- //
+public:
+	//TODO void	sort(void);
+	//TODO void	sortVector(some offset);
+	//TODO void	sortDeque(some offset);
 };
 
-//std::ostream	&operator<<(std::ostream &os, const PmergeMe &c);
+std::ostream	&operator<<(std::ostream &os, const PmergeMe &c);
 
 # define RESET	"\033[0m"
 # define YELLOW	"\033[33m"
