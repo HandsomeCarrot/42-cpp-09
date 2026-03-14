@@ -9,13 +9,16 @@
 class PmergeMe
 {
 // ----- Variables ----- //
+public: 
+	typedef std::vector<int>	t_vector;
+	typedef std::deque<int>		t_deque;
 private:
-	std::vector<int>	_vector_container;
-	bool				_vector_sorted;
+	t_vector	_vector_container;
+	bool		_vector_sorted;
 	//timer result for vector
 
-	std::deque<int>	_deque_container;
-	bool			_deque_sorted;
+	t_deque	_deque_container;
+	bool	_deque_sorted;
 	//timer result for deque
 
 // ----- De/Constructors ----- //
@@ -31,8 +34,8 @@ public:
 
 // ----- Getters ----- //
 public:
-	const std::vector<int>	getVectorContainer(void) const;
-	const std::deque<int>	getDequeContainer(void) const;
+	const t_vector	getVectorContainer(void) const;
+	const t_deque	getDequeContainer(void) const;
 	
 	bool	getVectorSortedStatus(void) const;
 	bool	getDequeSortedStatus(void) const;
@@ -43,8 +46,8 @@ public:
 // ----- Functions ----- //
 public:
 	//TODO void	sort(void);
-	//TODO void	sortVector(some offset);
-	//TODO void	sortDeque(some offset);
+	void	sort(t_vector & v, std::size_t step = 1);
+	//TODO void	sortDeque(std::deque<int> & v, std::size_t step = 1);
 };
 
 std::ostream	&operator<<(std::ostream &os, const PmergeMe &c);

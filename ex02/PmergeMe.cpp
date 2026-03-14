@@ -131,12 +131,12 @@ PmergeMe::PmergeMe(const std::string & value_sequence) :
 		throw std::runtime_error("sequence is empty");
 }
 
-const std::vector<int> PmergeMe::getVectorContainer(void) const
+const PmergeMe::t_vector PmergeMe::getVectorContainer(void) const
 {
 	return (_vector_container);
 }
 
-const std::deque<int> PmergeMe::getDequeContainer(void) const
+const PmergeMe::t_deque PmergeMe::getDequeContainer(void) const
 {
 	return (_deque_container);
 }
@@ -164,4 +164,47 @@ std::ostream	&operator<<(std::ostream &os, const PmergeMe &c)
 	//TODO
 	(void)c;
 	return (os);
+}
+
+namespace
+{
+	void switchPair(PmergeMe::t_vector & v, PmergeMe::t_vector::size_type a_index, PmergeMe::t_vector::size_type step)
+	{
+		
+	}
+
+	void sortPairs(PmergeMe::t_vector & v, PmergeMe::t_vector::size_type step)
+	{
+		for (PmergeMe::t_vector::size_type i = 0; i < v.size(); i += step)
+		{
+			if (i + 1 > v.size())
+				break ;
+			
+			PmergeMe::t_vector::size_type left_pair_node = i * step;
+			PmergeMe::t_vector::size_type right_pair_node = i * step + step;
+
+			if (v[left_pair_node] < v[right_pair_node])
+			{
+				//move pairs (whole blocks)
+			}
+		}
+	}
+}
+
+void PmergeMe::sort(t_vector & v, t_vector::size_type step)
+{
+	if (step == 0)
+		throw std::runtime_error("vector sort: step of 0 is invalid");
+
+	if (step >= v.size()) //return if one value remaining
+		return ;
+
+	//sort the pairs
+	// for (t_vector::size_type i = 0; i < v_size; i += step)
+	// {
+	// 	if (i + 1 > v_size) //check hanging value
+	// 		break ;
+
+	// 	if (v[i] < v[i+1])
+	// }
 }
