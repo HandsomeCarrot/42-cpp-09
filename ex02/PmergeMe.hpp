@@ -45,9 +45,9 @@ public:
 
 // ----- Functions ----- //
 public:
-	//TODO void	sort(void);
 	void	sort(t_vector & v, std::size_t step = 1);
 	//TODO void	sortDeque(std::deque<int> & v, std::size_t step = 1);
+	void	sort(void);
 };
 
 std::ostream	&operator<<(std::ostream &os, const PmergeMe &c);

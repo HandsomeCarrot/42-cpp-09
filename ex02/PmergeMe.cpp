@@ -1,4 +1,5 @@
 #include "PmergeMe.hpp"
+#include <algorithm>
 #include <cerrno>		//errno, ERANGE
 #include <cstdlib>		//std::strtol
 #include <iostream>		//std::cerr/cout/endl
@@ -170,35 +171,48 @@ namespace
 {
 	void switchPair(PmergeMe::t_vector & v, PmergeMe::t_vector::size_type a_index, PmergeMe::t_vector::size_type step)
 	{
-		
+		PmergeMe::t_vector::iterator i1 = v.begin() + a_index;
+		PmergeMe::t_vector::iterator i2 = v.begin() + a_index + step;
+
+		std::swap_ranges(i1, i2, i2);
 	}
 
 	void sortPairs(PmergeMe::t_vector & v, PmergeMe::t_vector::size_type step)
 	{
-		for (PmergeMe::t_vector::size_type i = 0; i < v.size(); i += step)
-		{
-			if (i + 1 > v.size())
-				break ;
-			
-			PmergeMe::t_vector::size_type left_pair_node = i * step;
-			PmergeMe::t_vector::size_type right_pair_node = i * step + step;
+		DEBUG_MSG("sorting pairs");
 
-			if (v[left_pair_node] < v[right_pair_node])
+		for (PmergeMe::t_vector::size_type i = 0; i < v.size(); i += (2 * step))
+		{
+			PmergeMe::t_vector::size_type left_pair_node = i + step - 1;
+			PmergeMe::t_vector::size_type right_pair_node = left_pair_node + step;
+			
+			if (right_pair_node > v.size())
+				break ;
+
+			DEBUG_MSG("index: " << i << ": pair: " << v[left_pair_node] << " | " << v[right_pair_node]);
+
+			if (v[left_pair_node] > v[right_pair_node])
 			{
-				//move pairs (whole blocks)
+				switchPair(v, i, step);
+				DEBUG_MSG("pair swapped -> " << v[left_pair_node] << " | " << v[right_pair_node]);
 			}
 		}
 	}
 }
 
+// odd vector size not implemented
 void PmergeMe::sort(t_vector & v, t_vector::size_type step)
 {
 	if (step == 0)
 		throw std::runtime_error("vector sort: step of 0 is invalid");
 
-	if (step >= v.size()) //return if one value remaining
+	if (step >= (v.size() / 2)) //return if one value remaining
 		return ;
 
+	DEBUG_MSG("step = " << step);
+
+	sortPairs(v, step);
+	sort(v, step * 2);
 	//sort the pairs
 	// for (t_vector::size_type i = 0; i < v_size; i += step)
 	// {
@@ -207,4 +221,12 @@ void PmergeMe::sort(t_vector & v, t_vector::size_type step)
 
 	// 	if (v[i] < v[i+1])
 	// }
+}
+
+void PmergeMe::sort(void)
+{
+	DEBUG_MSG("sorting vector");
+	// add timer
+	sort(_vector_container);
+	// sort other container
 }
