@@ -45,6 +45,10 @@ public:
 	//TODO something	getDequeTimer(void) const;
 
 // ----- Functions ----- //
+private:
+	static void	switchPair(t_vector & v, t_vector::size_type a_index, t_vector::size_type step);
+	static void	sortPairs(t_vector & v, t_vector::size_type step);
+
 public:
 	void	sort(t_vector & v, std::size_t step = 1);
 	//TODO void	sortDeque(std::deque<int> & v, std::size_t step = 1);

@@ -167,35 +167,32 @@ std::ostream	&operator<<(std::ostream &os, const PmergeMe &c)
 	return (os);
 }
 
-namespace
+void PmergeMe::switchPair(t_vector & v, t_vector::size_type a_index, t_vector::size_type step)
 {
-	void switchPair(PmergeMe::t_vector & v, PmergeMe::t_vector::size_type a_index, PmergeMe::t_vector::size_type step)
+	t_vector::iterator i1 = v.begin() + a_index;
+	t_vector::iterator i2 = v.begin() + a_index + step;
+
+	std::swap_ranges(i1, i2, i2);
+}
+
+void PmergeMe::sortPairs(t_vector & v, t_vector::size_type step)
+{
+	DEBUG_MSG("sorting pairs");
+
+	for (t_vector::size_type i = 0; i < v.size(); i += (2 * step))
 	{
-		PmergeMe::t_vector::iterator i1 = v.begin() + a_index;
-		PmergeMe::t_vector::iterator i2 = v.begin() + a_index + step;
+		t_vector::size_type left_pair_node = i + step - 1;
+		t_vector::size_type right_pair_node = left_pair_node + step;
+		
+		if (right_pair_node >= v.size())
+			break ;
 
-		std::swap_ranges(i1, i2, i2);
-	}
+		DEBUG_MSG("index: " << i << ": pair: " << v[left_pair_node] << " | " << v[right_pair_node]);
 
-	void sortPairs(PmergeMe::t_vector & v, PmergeMe::t_vector::size_type step)
-	{
-		DEBUG_MSG("sorting pairs");
-
-		for (PmergeMe::t_vector::size_type i = 0; i < v.size(); i += (2 * step))
+		if (v[left_pair_node] > v[right_pair_node])
 		{
-			PmergeMe::t_vector::size_type left_pair_node = i + step - 1;
-			PmergeMe::t_vector::size_type right_pair_node = left_pair_node + step;
-			
-			if (right_pair_node >= v.size())
-				break ;
-
-			DEBUG_MSG("index: " << i << ": pair: " << v[left_pair_node] << " | " << v[right_pair_node]);
-
-			if (v[left_pair_node] > v[right_pair_node])
-			{
-				switchPair(v, i, step);
-				DEBUG_MSG("pair swapped -> " << v[left_pair_node] << " | " << v[right_pair_node]);
-			}
+			switchPair(v, i, step);
+			DEBUG_MSG("pair swapped -> " << v[left_pair_node] << " | " << v[right_pair_node]);
 		}
 	}
 }
@@ -213,14 +210,6 @@ void PmergeMe::sort(t_vector & v, t_vector::size_type step)
 
 	sortPairs(v, step);
 	sort(v, step * 2);
-	//sort the pairs
-	// for (t_vector::size_type i = 0; i < v_size; i += step)
-	// {
-	// 	if (i + 1 > v_size) //check hanging value
-	// 		break ;
-
-	// 	if (v[i] < v[i+1])
-	// }
 }
 
 void PmergeMe::sort(void)
