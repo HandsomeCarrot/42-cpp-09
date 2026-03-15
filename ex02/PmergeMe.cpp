@@ -167,10 +167,10 @@ std::ostream	&operator<<(std::ostream &os, const PmergeMe &c)
 	return (os);
 }
 
-void PmergeMe::switchPair(t_vector & v, t_vector::size_type a_index, t_vector::size_type step)
+void PmergeMe::switchPair(t_vector & v, t_vector::size_type index, t_vector::size_type step)
 {
-	t_vector::iterator i1 = v.begin() + a_index;
-	t_vector::iterator i2 = v.begin() + a_index + step;
+	t_vector::iterator i1 = v.begin() + index;
+	t_vector::iterator i2 = v.begin() + index + step;
 
 	std::swap_ranges(i1, i2, i2);
 }

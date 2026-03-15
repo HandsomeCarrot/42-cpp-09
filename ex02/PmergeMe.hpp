@@ -46,7 +46,7 @@ public:
 
 // ----- Functions ----- //
 private:
-	static void	switchPair(t_vector & v, t_vector::size_type a_index, t_vector::size_type step);
+	static void	switchPair(t_vector & v, t_vector::size_type index, t_vector::size_type step);
 	static void	sortPairs(t_vector & v, t_vector::size_type step);
 
 public:
