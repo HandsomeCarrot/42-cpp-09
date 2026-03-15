@@ -1,5 +1,5 @@
 #include "PmergeMe.hpp"
-#include <algorithm>
+#include <algorithm>	//std::swap_ranges
 #include <cerrno>		//errno, ERANGE
 #include <cstdlib>		//std::strtol
 #include <iostream>		//std::cerr/cout/endl
@@ -186,7 +186,7 @@ namespace
 			PmergeMe::t_vector::size_type left_pair_node = i + step - 1;
 			PmergeMe::t_vector::size_type right_pair_node = left_pair_node + step;
 			
-			if (right_pair_node > v.size())
+			if (right_pair_node >= v.size())
 				break ;
 
 			DEBUG_MSG("index: " << i << ": pair: " << v[left_pair_node] << " | " << v[right_pair_node]);
@@ -225,8 +225,9 @@ void PmergeMe::sort(t_vector & v, t_vector::size_type step)
 
 void PmergeMe::sort(void)
 {
-	DEBUG_MSG("sorting vector");
+	DEBUG_MSG("vector before: " << containerToString(getVectorContainer(), 0));
 	// add timer
 	sort(_vector_container);
+	DEBUG_MSG("vector after : " << containerToString(getVectorContainer(), 0));
 	// sort other container
 }

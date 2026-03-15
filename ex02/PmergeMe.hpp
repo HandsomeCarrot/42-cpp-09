@@ -1,10 +1,11 @@
 #ifndef PMERGEME_HPP
 # define PMERGEME_HPP
 
-#include <deque>
+#include <deque>	//std::deque
 #include <ostream>	//std::ostream
-#include <string>
-#include <vector>
+#include <sstream>	//std::ostringstream
+#include <string>	//std::string
+#include <vector>	//std::vector
 
 class PmergeMe
 {
@@ -51,6 +52,37 @@ public:
 };
 
 std::ostream	&operator<<(std::ostream &os, const PmergeMe &c);
+
+template <typename Container>
+std::string	containerToString(const Container &container, std::size_t max_elements = 6)
+{
+	typename Container::const_iterator	it = container.begin();
+	std::ostringstream					oss;
+	std::size_t							count = 0;
+
+	oss << "[ ";
+
+	while (it != container.end())
+	{
+		if (count > 0)
+			oss << " | ";
+
+		if (max_elements > 0 && count >= max_elements)
+		{
+			oss << "...";
+			break ;
+		}
+
+		oss << *it;
+
+		++it;
+		++count;
+	}
+
+	oss << " ]";
+
+	return (oss.str());
+}
 
 # define RESET	"\033[0m"
 # define YELLOW	"\033[33m"
