@@ -179,20 +179,17 @@ void PmergeMe::sortPairs(t_vector & v, t_vector::size_type step)
 {
 	DEBUG_MSG("sorting pairs");
 
-	for (t_vector::size_type i = 0; i < v.size(); i += (2 * step))
+	for (t_vector::size_type block = 0; block + (2 * step) <= v.size(); block += (2 * step))
 	{
-		t_vector::size_type left_pair_node = i + step - 1;
-		t_vector::size_type right_pair_node = left_pair_node + step;
-		
-		if (right_pair_node >= v.size())
-			break ;
+		t_vector::size_type left = block + step - 1;
+		t_vector::size_type right = left + step;
 
-		DEBUG_MSG("index: " << i << ": pair: " << v[left_pair_node] << " | " << v[right_pair_node]);
+		DEBUG_MSG("index: " << block << ": pair: " << v[left] << " | " << v[right]);
 
-		if (v[left_pair_node] > v[right_pair_node])
+		if (v[left] > v[right])
 		{
-			switchPair(v, i, step);
-			DEBUG_MSG("pair swapped -> " << v[left_pair_node] << " | " << v[right_pair_node]);
+			switchPair(v, block, step);
+			DEBUG_MSG("pair swapped -> " << v[left] << " | " << v[right]);
 		}
 	}
 }
@@ -213,20 +210,18 @@ void PmergeMe::sort(t_vector & v, t_vector::size_type step)
 	sort(v, step * 2);
 
 	//detect insertion & hanging pairs correctly
-	for (t_vector::size_type i = 0; i < v.size(); i += (2 * step))
+	for (t_vector::size_type block = 0; block + step <= v.size(); block += (2 * step))
 	{
-		t_vector::size_type left_pair_node = i + step - 1;
-		t_vector::size_type right_pair_node = left_pair_node + step;
+		t_vector::size_type left = block + step - 1;
+		t_vector::size_type right = left + step;
 		
-		if (left_pair_node >= v.size())
-			break ;
-		else if (right_pair_node >= v.size())
+		if (right >= v.size())
 		{
-			DEBUG_MSG("step: " << step << ": insert: " << v[left_pair_node] << " (hanging)");
+			DEBUG_MSG("step: " << step << ": insert: " << v[left] << " (hanging)");
 			break ;
 		}
 		else
-			DEBUG_MSG("step: " << step << ": insert: " << v[left_pair_node]);
+			DEBUG_MSG("step: " << step << ": insert: " << v[left]);
 	}
 }
 
