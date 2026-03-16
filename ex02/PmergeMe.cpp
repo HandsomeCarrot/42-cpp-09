@@ -209,7 +209,25 @@ void PmergeMe::sort(t_vector & v, t_vector::size_type step)
 	DEBUG_MSG("step = " << step);
 
 	sortPairs(v, step);
+
 	sort(v, step * 2);
+
+	//detect insertion & hanging pairs correctly
+	for (t_vector::size_type i = 0; i < v.size(); i += (2 * step))
+	{
+		t_vector::size_type left_pair_node = i + step - 1;
+		t_vector::size_type right_pair_node = left_pair_node + step;
+		
+		if (left_pair_node >= v.size())
+			break ;
+		else if (right_pair_node >= v.size())
+		{
+			DEBUG_MSG("step: " << step << ": insert: " << v[left_pair_node] << " (hanging)");
+			break ;
+		}
+		else
+			DEBUG_MSG("step: " << step << ": insert: " << v[left_pair_node]);
+	}
 }
 
 void PmergeMe::sort(void)
