@@ -1,6 +1,7 @@
 #include "PmergeMe.hpp"
 #include <algorithm>	//std::swap_ranges
 #include <cerrno>		//errno, ERANGE
+#include <cmath>		//std::pow
 #include <cstdlib>		//std::strtol
 #include <iostream>		//std::cerr/cout/endl
 #include <limits>		//std::numeric_limits
@@ -177,14 +178,14 @@ void PmergeMe::switchPair(t_vector & v, t_vector::size_type index, t_vector::siz
 
 void PmergeMe::sortPairs(t_vector & v, t_vector::size_type step)
 {
-	DEBUG_MSG("sorting pairs");
+	DEBUG_MSG("SORTING: step size = " << step);
 
 	for (t_vector::size_type block = 0; block + (2 * step) <= v.size(); block += (2 * step))
 	{
 		t_vector::size_type left = block + step - 1;
 		t_vector::size_type right = left + step;
 
-		DEBUG_MSG("index: " << block << ": pair: " << v[left] << " | " << v[right]);
+		DEBUG_MSG("index = " << block << ": pair = " << v[left] << " | " << v[right]);
 
 		if (v[left] > v[right])
 		{
@@ -203,25 +204,62 @@ void PmergeMe::sort(t_vector & v, t_vector::size_type step)
 	if (step >= (v.size() / 2)) //return if one value remaining
 		return ;
 
-	DEBUG_MSG("step = " << step);
-
 	sortPairs(v, step);
 
 	sort(v, step * 2);
 
-	//detect insertion & hanging pairs correctly
-	for (t_vector::size_type block = 0; block + step <= v.size(); block += (2 * step))
+	DEBUG_MSG("INSERTING: step size = " << step);
+	
+	t_vector::size_type k = 2;
+	bool				end = false;
+	bool				odd = v.size() % 2;
+
+	while (!end)
 	{
-		t_vector::size_type left = block + step - 1;
-		t_vector::size_type right = left + step;
+		t_vector::size_type insert_start = (std::pow(2, (k + 1)) + std::pow(-1, k)) / 3;
+		t_vector::size_type insert_end = ((std::pow(2, (k)) + std::pow(-1, (k - 1))) / 3) + 1;
+
+		DEBUG_MSG("k = " << k << ", insert start = " << insert_start << ", insert end = " << insert_end);
+
+		t_vector::size_type start_index = 2 * insert_start * step - 1;
+		t_vector::size_type end_index = 2 * insert_end * step - 1;
 		
-		if (right >= v.size())
+		if (odd)
 		{
-			DEBUG_MSG("step: " << step << ": insert: " << v[left] << " (hanging)");
-			break ;
+			DEBUG_MSG("correcting: odd");
+			start_index -= step;
+			end_index -= step;
 		}
-		else
-			DEBUG_MSG("step: " << step << ": insert: " << v[left]);
+		
+		if (end_index >= v.size())
+			break ;
+		
+		DEBUG_MSG("start index = " << start_index << ", end index = " << end_index);
+
+		//mark the end the loop
+		if (start_index + step >= v.size())
+		{
+			end = true;
+			DEBUG_MSG("end");
+		}
+
+		// go to first valid index
+		while (start_index >= v.size())
+		{
+			start_index -= (2 * step);
+			DEBUG_MSG("correcting: start index = " << start_index);
+		}
+
+		if (start_index < end_index)
+			break ;
+
+		while (start_index >= end_index)
+		{
+			DEBUG_MSG("insert: " << v[start_index]);
+			start_index -= (2 * step);
+		}
+
+		++k;
 	}
 }
 
