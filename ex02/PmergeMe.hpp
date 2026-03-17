@@ -46,11 +46,11 @@ public:
 
 // ----- Functions ----- //
 private:
-	static void	switchPair(t_vector & v, t_vector::size_type index, t_vector::size_type step);
-	static void	sortPairs(t_vector & v, t_vector::size_type step);
+	static void	switchPair(t_vector & values, t_vector::size_type pair_start_index, t_vector::size_type block_size);
+	static void	sortPairs(t_vector & values, t_vector::size_type block_size);
 
 public:
-	void	sort(t_vector & v, std::size_t step = 1);
+	void	sort(t_vector & values, std::size_t block_size = 1);
 	//TODO void	sortDeque(std::deque<int> & v, std::size_t step = 1);
 	void	sort(void);
 };

@@ -76,13 +76,13 @@ namespace
 	 */
 	int	parseValueToken(const std::string & token)
 	{
-		char * end = NULL;
+		char * parse_end = NULL;
 		long parsed_value;
 
 		errno = 0;
-		parsed_value = std::strtol(token.c_str(), &end, 10);
+		parsed_value = std::strtol(token.c_str(), &parse_end, 10);
 
-		if (end == token.c_str() || *end != '\0')
+		if (parse_end == token.c_str() || *parse_end != '\0')
 			throw std::runtime_error("non-numeric character encountered: " + token);
 		else if (errno == ERANGE
 			|| parsed_value < 0
@@ -122,12 +122,10 @@ PmergeMe::PmergeMe(const std::string & value_sequence) :
 
 	while (token_stream >> token)
 	{
-		int	value = parseValueToken(token);
+		int	parsed_value = parseValueToken(token);
 
-		(void)value;
-
-		_vector_container.push_back(value);
-		_deque_container.push_back(value);
+		_vector_container.push_back(parsed_value);
+		_deque_container.push_back(parsed_value);
 	}
 
 	if (_vector_container.empty())
@@ -169,94 +167,96 @@ std::ostream	&operator<<(std::ostream &os, const PmergeMe &c)
 	return (os);
 }
 
-void PmergeMe::switchPair(t_vector & v, t_vector::size_type index, t_vector::size_type step)
+void PmergeMe::switchPair(t_vector & values, t_vector::size_type pair_start_index, t_vector::size_type block_size)
 {
-	t_vector::iterator i1 = v.begin() + index;
-	t_vector::iterator i2 = v.begin() + index + step;
+	t_vector::iterator left_block_begin = values.begin() + pair_start_index;
+	t_vector::iterator right_block_begin = values.begin() + pair_start_index + block_size;
 
-	std::swap_ranges(i1, i2, i2);
+	std::swap_ranges(left_block_begin, right_block_begin, right_block_begin);
 }
 
-void PmergeMe::sortPairs(t_vector & v, t_vector::size_type step)
+void PmergeMe::sortPairs(t_vector & values, t_vector::size_type block_size)
 {
-	for (t_vector::size_type block = 0; block + (2 * step) <= v.size(); block += (2 * step))
+	for (t_vector::size_type pair_start_index = 0; pair_start_index + (2 * block_size) <= values.size(); pair_start_index += (2 * block_size))
 	{
-		t_vector::size_type left = block + step - 1;
-		t_vector::size_type right = left + step;
+		t_vector::size_type left_block_last_index = pair_start_index + block_size - 1;
+		t_vector::size_type right_block_last_index = left_block_last_index + block_size;
 
-		if (v[left] > v[right])
+		if (values[left_block_last_index] > values[right_block_last_index])
 		{
-			switchPair(v, block, step);
-			DEBUG_MSG("cmp [" << v[right] << " | " << v[left] << "] -> swap");
+			switchPair(values, pair_start_index, block_size);
+			DEBUG_MSG("cmp [" << values[right_block_last_index] << " | " << values[left_block_last_index] << "] -> swap");
 		}
 		else
-			DEBUG_MSG("cmp [" << v[left] << " | " << v[right] << "] -> no swap");
+		{
+			DEBUG_MSG("cmp [" << values[left_block_last_index] << " | " << values[right_block_last_index] << "] -> no swap");
+		}
 	}
 }
 
 // odd vector size not implemented
-void PmergeMe::sort(t_vector & v, t_vector::size_type step)
+void PmergeMe::sort(t_vector & values, t_vector::size_type block_size)
 {
-	if (step == 0)
+	if (block_size == 0)
 		throw std::runtime_error("vector sort: step of 0 is invalid");
 
-	if (step >= (v.size() / 2)) //return if one value remaining
+	if (block_size >= (values.size() / 2)) //return if one value remaining
 		return ;
 
-	DEBUG_PHASE("SORT  step=" << step);
+	DEBUG_PHASE("SORT  step=" << block_size);
 
-	sortPairs(v, step);
+	sortPairs(values, block_size);
 
-	DEBUG_MSG_CONTAINER("after: ", v);
+	DEBUG_MSG_CONTAINER("after: ", values);
 
-	sort(v, step * 2);
+	sort(values, block_size * 2);
 
-	DEBUG_PHASE("INSERT step=" << step);
+	DEBUG_PHASE("INSERT step=" << block_size);
 	
-	t_vector::size_type k = 2;
-	bool				end = (false);
-	bool				odd = v.size() % 2;
+	t_vector::size_type jacobsthal_group_index = 2;
+	bool				is_last_group = (false);
+	bool				has_straggler = values.size() % 2;
 
-	while (!end)
+	while (!is_last_group)
 	{
-		t_vector::size_type insert_start = (std::pow(2, (k + 1)) + std::pow(-1, k)) / 3;
-		t_vector::size_type insert_end = ((std::pow(2, (k)) + std::pow(-1, (k - 1))) / 3) + 1;
+		t_vector::size_type group_upper_bound = (std::pow(2, (jacobsthal_group_index + 1)) + std::pow(-1, jacobsthal_group_index)) / 3;
+		t_vector::size_type group_lower_bound = ((std::pow(2, (jacobsthal_group_index)) + std::pow(-1, (jacobsthal_group_index - 1))) / 3) + 1;
 
-		t_vector::size_type start_index = 2 * insert_start * step - 1;
-		t_vector::size_type end_index = 2 * insert_end * step - 1;
+		t_vector::size_type current_insert_index = 2 * group_upper_bound * block_size - 1;
+		t_vector::size_type group_stop_index = 2 * group_lower_bound * block_size - 1;
 		
-		if (odd)
+		if (has_straggler)
 		{
-			start_index -= step;
-			end_index -= step;
+			current_insert_index -= block_size;
+			group_stop_index -= block_size;
 		}
 		
-		if (end_index >= v.size())
+		if (group_stop_index >= values.size())
 			break ;
 
-		DEBUG_MSG("group k=" << k << "  range=[" << start_index << ".." << end_index << "]");
+		DEBUG_MSG("group k=" << jacobsthal_group_index << "  range=[" << current_insert_index << ".." << group_stop_index << "]");
 
 		//mark the end the loop
-		if (start_index + step >= v.size())
-			end = true;
+		if (current_insert_index + block_size >= values.size())
+			is_last_group = true;
 
 		// go to first valid index
-		while (start_index >= v.size())
-			start_index -= (2 * step);
+		while (current_insert_index >= values.size())
+			current_insert_index -= (2 * block_size);
 
-		if (start_index < end_index)
+		if (current_insert_index < group_stop_index)
 			break ;
 
-		while (start_index >= end_index)
+		while (current_insert_index >= group_stop_index)
 		{
-			DEBUG_MSG_LABEL(" > ", "insert v[" << start_index << "]=" << v[start_index]);
-			start_index -= (2 * step);
+			DEBUG_MSG_LABEL(" > ", "insert v[" << current_insert_index << "]=" << values[current_insert_index]);
+			current_insert_index -= (2 * block_size);
 		}
 
-		++k;
+		++jacobsthal_group_index;
 	}
 
-	DEBUG_MSG_CONTAINER("after: ", v);
+	DEBUG_MSG_CONTAINER("after: ", values);
 }
 
 void PmergeMe::sort(void)
