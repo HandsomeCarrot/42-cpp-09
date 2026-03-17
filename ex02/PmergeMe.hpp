@@ -90,12 +90,25 @@ std::string	containerToString(const Container &container, std::size_t max_elemen
 
 # define RESET	"\033[0m"
 # define YELLOW	"\033[33m"
+# define CYAN	"\033[36m"
+# define BOLD	"\033[1m"
+# define DIM	"\033[2m"
 
 # ifdef DEBUG
 #  include <iostream>
-#  define DEBUG_MSG(x) std::cout << YELLOW << "[DEBUG] " << RESET << x << std::endl
+#  define DEBUG_MSG_LABEL_COLOR(color, label, msg) std::cerr << color << label << RESET << msg << std::endl
+#  define DEBUG_MSG_LABEL(label, msg) DEBUG_MSG_LABEL_COLOR(YELLOW, label, msg)
+#  define DEBUG_MSG(msg) DEBUG_MSG_LABEL("> ", msg)
+
+#  define DEBUG_PHASE(description) std::cerr << std::endl << BOLD << CYAN << "══════ " << description << " ══════" << RESET << std::endl
+
+#  define DEBUG_MSG_CONTAINER(msg, container) DEBUG_MSG_LABEL_COLOR(DIM, msg, containerToString(container, 0))
 # else
-#  define DEBUG_MSG(x)
+#  define DEBUG_MSG_LABEL_COLOR(color, label, msg)
+#  define DEBUG_MSG_LABEL(label, msg)
+#  define DEBUG_MSG(msg)
+#  define DEBUG_PHASE(description)
+#  define DEBUG_MSG_CONTAINER(msg, container)
 # endif
 
 #endif /* PMERGEME_HPP */

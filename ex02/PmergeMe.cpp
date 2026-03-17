@@ -15,7 +15,7 @@ PmergeMe::PmergeMe(void) :
 	_vector_sorted(false),
 	_deque_sorted(false)
 {
-	DEBUG_MSG("PmergeMe default constructor called");
+	DEBUG_MSG_LABEL("[PmergeMe] ", "ctor(default)");
 }
 
 /**
@@ -25,7 +25,8 @@ PmergeMe::PmergeMe(void) :
 */
 PmergeMe::PmergeMe(const PmergeMe &other)
 {
-	DEBUG_MSG("PmergeMe copy constructor called");
+	DEBUG_MSG_LABEL("[PmergeMe] ", "ctor(copy)");
+
 	this->_vector_container = other._vector_container;
 	this->_vector_sorted = other._vector_sorted;
 	this->_deque_container = other._deque_container;
@@ -37,7 +38,7 @@ PmergeMe::PmergeMe(const PmergeMe &other)
 */
 PmergeMe::~PmergeMe(void)
 {
-	DEBUG_MSG("PmergeMe destructor called");
+	DEBUG_MSG_LABEL("[PmergeMe] ", "dtor");
 }
 
 /**
@@ -49,7 +50,7 @@ PmergeMe::~PmergeMe(void)
 */
 PmergeMe	&PmergeMe::operator=(const PmergeMe &other)
 {
-	DEBUG_MSG("PmergeMe assignment operator called");
+	DEBUG_MSG_LABEL("[PmergeMe] ", "operator=");
 	if (this != &other)
 	{
 		this->_vector_container = other._vector_container;
@@ -114,7 +115,7 @@ PmergeMe::PmergeMe(const std::string & value_sequence) :
 	_vector_sorted(false),
 	_deque_sorted(false)
 {
-	DEBUG_MSG("PmergeMe parameterized constructor called");
+	DEBUG_MSG_LABEL("[PmergeMe] ", "ctor(param)");
 
 	std::istringstream	token_stream(value_sequence);
 	std::string			token;
@@ -123,7 +124,7 @@ PmergeMe::PmergeMe(const std::string & value_sequence) :
 	{
 		int	value = parseValueToken(token);
 
-		DEBUG_MSG("pushed: " << value);
+		(void)value;
 
 		_vector_container.push_back(value);
 		_deque_container.push_back(value);
@@ -178,20 +179,18 @@ void PmergeMe::switchPair(t_vector & v, t_vector::size_type index, t_vector::siz
 
 void PmergeMe::sortPairs(t_vector & v, t_vector::size_type step)
 {
-	DEBUG_MSG("SORTING: step size = " << step);
-
 	for (t_vector::size_type block = 0; block + (2 * step) <= v.size(); block += (2 * step))
 	{
 		t_vector::size_type left = block + step - 1;
 		t_vector::size_type right = left + step;
 
-		DEBUG_MSG("index = " << block << ": pair = " << v[left] << " | " << v[right]);
-
 		if (v[left] > v[right])
 		{
 			switchPair(v, block, step);
-			DEBUG_MSG("pair swapped -> " << v[left] << " | " << v[right]);
+			DEBUG_MSG("cmp [" << v[right] << " | " << v[left] << "] -> swap");
 		}
+		else
+			DEBUG_MSG("cmp [" << v[left] << " | " << v[right] << "] -> no swap");
 	}
 }
 
@@ -204,14 +203,18 @@ void PmergeMe::sort(t_vector & v, t_vector::size_type step)
 	if (step >= (v.size() / 2)) //return if one value remaining
 		return ;
 
+	DEBUG_PHASE("SORT  step=" << step);
+
 	sortPairs(v, step);
+
+	DEBUG_MSG_CONTAINER("after: ", v);
 
 	sort(v, step * 2);
 
-	DEBUG_MSG("INSERTING: step size = " << step);
+	DEBUG_PHASE("INSERT step=" << step);
 	
 	t_vector::size_type k = 2;
-	bool				end = false;
+	bool				end = (false);
 	bool				odd = v.size() % 2;
 
 	while (!end)
@@ -219,55 +222,48 @@ void PmergeMe::sort(t_vector & v, t_vector::size_type step)
 		t_vector::size_type insert_start = (std::pow(2, (k + 1)) + std::pow(-1, k)) / 3;
 		t_vector::size_type insert_end = ((std::pow(2, (k)) + std::pow(-1, (k - 1))) / 3) + 1;
 
-		DEBUG_MSG("k = " << k << ", insert start = " << insert_start << ", insert end = " << insert_end);
-
 		t_vector::size_type start_index = 2 * insert_start * step - 1;
 		t_vector::size_type end_index = 2 * insert_end * step - 1;
 		
 		if (odd)
 		{
-			DEBUG_MSG("correcting: odd");
 			start_index -= step;
 			end_index -= step;
 		}
 		
 		if (end_index >= v.size())
 			break ;
-		
-		DEBUG_MSG("start index = " << start_index << ", end index = " << end_index);
+
+		DEBUG_MSG("group k=" << k << "  range=[" << start_index << ".." << end_index << "]");
 
 		//mark the end the loop
 		if (start_index + step >= v.size())
-		{
 			end = true;
-			DEBUG_MSG("end");
-		}
 
 		// go to first valid index
 		while (start_index >= v.size())
-		{
 			start_index -= (2 * step);
-			DEBUG_MSG("correcting: start index = " << start_index);
-		}
 
 		if (start_index < end_index)
 			break ;
 
 		while (start_index >= end_index)
 		{
-			DEBUG_MSG("insert: " << v[start_index]);
+			DEBUG_MSG_LABEL(" > ", "insert v[" << start_index << "]=" << v[start_index]);
 			start_index -= (2 * step);
 		}
 
 		++k;
 	}
+
+	DEBUG_MSG_CONTAINER("after: ", v);
 }
 
 void PmergeMe::sort(void)
 {
-	DEBUG_MSG("vector before: " << containerToString(getVectorContainer(), 0));
+	DEBUG_PHASE("VECTOR");
+	DEBUG_MSG_CONTAINER("given: ", _vector_container);
 	// add timer
 	sort(_vector_container);
-	DEBUG_MSG("vector after : " << containerToString(getVectorContainer(), 0));
 	// sort other container
 }
