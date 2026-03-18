@@ -212,47 +212,28 @@ void PmergeMe::sort(t_vector & values, t_vector::size_type block_size)
 	sort(values, block_size * 2);
 
 	DEBUG_PHASE("INSERT | block size = " << block_size);
-	
+
 	t_vector::size_type group_upper_bound = 3;
 	t_vector::size_type group_lower_bound = 2;
 	t_vector::size_type	jacobsthal_index = 3;
-	bool				is_last_group = false;
-	bool				has_straggler = (values.size() / block_size) % 2 != 0;
-	
-	if (has_straggler)
-		DEBUG_MSG(DIM << "has straggler" << RESET);
 
-	while (!is_last_group)
+	t_vector::size_type pending_block_count = ((values.size() / block_size) + 1) / 2;
+
+	DEBUG_MSG("blocks = " << values.size() / block_size << " | insertions = " << pending_block_count);
+
+	while (group_lower_bound <=pending_block_count)
 	{
-		t_vector::size_type current_insert_index = 2 * group_upper_bound * block_size - 1;
-		t_vector::size_type group_stop_index = 2 * group_lower_bound * block_size - 1;
-		
-		if (has_straggler)
-		{
-			current_insert_index -= block_size;
-			group_stop_index -= block_size;
-		}
-		
-		if (group_stop_index >= values.size())
-			break ;
-
 		DEBUG_MSG("groups " << group_upper_bound << ".." << group_lower_bound);
 
-		//mark the end of loop
-		if (current_insert_index + block_size >= values.size())
-			is_last_group = true;
+		t_vector::size_type pending_block_index = std::min(group_upper_bound, pending_block_count);
 
-		// go to first valid index
-		while (current_insert_index >= values.size())
-			current_insert_index -= (2 * block_size);
-
-		if (current_insert_index < group_stop_index)
-			break ;
-
-		while (current_insert_index >= group_stop_index)
+		while (pending_block_index >= group_lower_bound)
 		{
-			DEBUG_MSG_LABEL(" > ", "insert v[" << current_insert_index << "]=" << values[current_insert_index]);
-			current_insert_index -= (2 * block_size);
+			t_vector::size_type current_insert_index = ((2 * pending_block_index) - 1) * block_size - 1;
+
+			DEBUG_MSG_LABEL("  > ", "insert group " << pending_block_count << ": v[" << current_insert_index << "] = " << values[current_insert_index]);
+
+			--pending_block_index;
 		}
 
 		group_lower_bound = group_upper_bound + 1;
