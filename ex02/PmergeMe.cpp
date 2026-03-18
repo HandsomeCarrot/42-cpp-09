@@ -203,7 +203,7 @@ void PmergeMe::sort(t_vector & values, t_vector::size_type block_size)
 	if (block_size >= (values.size() / 2)) //return if one value remaining
 		return ;
 
-	DEBUG_PHASE("SORT  step=" << block_size);
+	DEBUG_PHASE("SORT | block size = " << block_size);
 
 	sortPairs(values, block_size);
 
@@ -211,17 +211,19 @@ void PmergeMe::sort(t_vector & values, t_vector::size_type block_size)
 
 	sort(values, block_size * 2);
 
-	DEBUG_PHASE("INSERT step=" << block_size);
+	DEBUG_PHASE("INSERT | block size = " << block_size);
 	
-	t_vector::size_type jacobsthal_group_index = 2;
-	bool				is_last_group = (false);
-	bool				has_straggler = values.size() % 2;
+	t_vector::size_type group_upper_bound = 3;
+	t_vector::size_type group_lower_bound = 2;
+	t_vector::size_type	jacobsthal_index = 3;
+	bool				is_last_group = false;
+	bool				has_straggler = (values.size() / block_size) % 2 != 0;
+	
+	if (has_straggler)
+		DEBUG_MSG(DIM << "has straggler" << RESET);
 
 	while (!is_last_group)
 	{
-		t_vector::size_type group_upper_bound = (std::pow(2, (jacobsthal_group_index + 1)) + std::pow(-1, jacobsthal_group_index)) / 3;
-		t_vector::size_type group_lower_bound = ((std::pow(2, (jacobsthal_group_index)) + std::pow(-1, (jacobsthal_group_index - 1))) / 3) + 1;
-
 		t_vector::size_type current_insert_index = 2 * group_upper_bound * block_size - 1;
 		t_vector::size_type group_stop_index = 2 * group_lower_bound * block_size - 1;
 		
@@ -234,9 +236,9 @@ void PmergeMe::sort(t_vector & values, t_vector::size_type block_size)
 		if (group_stop_index >= values.size())
 			break ;
 
-		DEBUG_MSG("group k=" << jacobsthal_group_index << "  range=[" << current_insert_index << ".." << group_stop_index << "]");
+		DEBUG_MSG("groups " << group_upper_bound << ".." << group_lower_bound);
 
-		//mark the end the loop
+		//mark the end of loop
 		if (current_insert_index + block_size >= values.size())
 			is_last_group = true;
 
@@ -253,7 +255,9 @@ void PmergeMe::sort(t_vector & values, t_vector::size_type block_size)
 			current_insert_index -= (2 * block_size);
 		}
 
-		++jacobsthal_group_index;
+		group_lower_bound = group_upper_bound + 1;
+		group_upper_bound = std::pow(2, jacobsthal_index) - group_upper_bound;
+		++jacobsthal_index;
 	}
 
 	DEBUG_MSG_CONTAINER("after: ", values);
