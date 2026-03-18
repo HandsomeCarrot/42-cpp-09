@@ -177,6 +177,7 @@ void PmergeMe::switchPair(t_vector & values, t_vector::size_type pair_start_inde
 
 void PmergeMe::sortPairs(t_vector & values, t_vector::size_type block_size)
 {
+	DEBUG_PHASE("SORT PAIRS | block size = " << block_size);
 	for (t_vector::size_type pair_start_index = 0; pair_start_index + (2 * block_size) <= values.size(); pair_start_index += (2 * block_size))
 	{
 		t_vector::size_type left_block_last_index = pair_start_index + block_size - 1;
@@ -188,13 +189,57 @@ void PmergeMe::sortPairs(t_vector & values, t_vector::size_type block_size)
 			DEBUG_MSG("cmp [" << values[right_block_last_index] << " | " << values[left_block_last_index] << "] -> swap");
 		}
 		else
-		{
 			DEBUG_MSG("cmp [" << values[left_block_last_index] << " | " << values[right_block_last_index] << "] -> no swap");
-		}
+	}
+	DEBUG_MSG_CONTAINER("after: ", values);
+}
+
+void PmergeMe::insertPendingGroup(
+	const t_vector & values,
+	t_vector::size_type block_size,
+	t_vector::size_type group_lower_bound,
+	t_vector::size_type group_upper_bound,
+	t_vector::size_type pending_block_count)
+{
+	t_vector::size_type pending_block_index = std::min(group_upper_bound, pending_block_count);
+
+	while (pending_block_index >= group_lower_bound)
+	{
+		t_vector::size_type current_insert_index = ((2 * pending_block_index) - 1) * block_size - 1;
+
+		DEBUG_MSG_LABEL("  > ", "insert group " << pending_block_count << ": v[" << current_insert_index << "] = " << values[current_insert_index]);
+
+		(void)current_insert_index;
+		(void)values;
+		//TODO binary search
+
+		--pending_block_index;
 	}
 }
 
-// odd vector size not implemented
+void PmergeMe::insertPendingBlocks(t_vector & values, t_vector::size_type block_size)
+{
+	t_vector::size_type group_upper_bound = 3;
+	t_vector::size_type group_lower_bound = 2;
+	t_vector::size_type	jacobsthal_index = 3;
+	t_vector::size_type pending_block_count = ((values.size() / block_size) + 1) / 2;
+
+	DEBUG_PHASE("INSERT | block size = " << block_size);
+	DEBUG_MSG("blocks = " << values.size() / block_size << " | insertions = " << pending_block_count);
+
+	while (group_lower_bound <= pending_block_count)
+	{
+		DEBUG_MSG("groups " << group_upper_bound << ".." << group_lower_bound);
+
+		insertPendingGroup(values, block_size, group_lower_bound, group_upper_bound, pending_block_count);
+
+		group_lower_bound = group_upper_bound + 1;
+		group_upper_bound = std::pow(2, jacobsthal_index) - group_upper_bound;
+		++jacobsthal_index;
+	}
+	DEBUG_MSG_CONTAINER("after: ", values);
+}
+
 void PmergeMe::sort(t_vector & values, t_vector::size_type block_size)
 {
 	if (block_size == 0)
@@ -203,45 +248,9 @@ void PmergeMe::sort(t_vector & values, t_vector::size_type block_size)
 	if (block_size >= (values.size() / 2)) //return if one value remaining
 		return ;
 
-	DEBUG_PHASE("SORT | block size = " << block_size);
-
 	sortPairs(values, block_size);
-
-	DEBUG_MSG_CONTAINER("after: ", values);
-
 	sort(values, block_size * 2);
-
-	DEBUG_PHASE("INSERT | block size = " << block_size);
-
-	t_vector::size_type group_upper_bound = 3;
-	t_vector::size_type group_lower_bound = 2;
-	t_vector::size_type	jacobsthal_index = 3;
-
-	t_vector::size_type pending_block_count = ((values.size() / block_size) + 1) / 2;
-
-	DEBUG_MSG("blocks = " << values.size() / block_size << " | insertions = " << pending_block_count);
-
-	while (group_lower_bound <=pending_block_count)
-	{
-		DEBUG_MSG("groups " << group_upper_bound << ".." << group_lower_bound);
-
-		t_vector::size_type pending_block_index = std::min(group_upper_bound, pending_block_count);
-
-		while (pending_block_index >= group_lower_bound)
-		{
-			t_vector::size_type current_insert_index = ((2 * pending_block_index) - 1) * block_size - 1;
-
-			DEBUG_MSG_LABEL("  > ", "insert group " << pending_block_count << ": v[" << current_insert_index << "] = " << values[current_insert_index]);
-
-			--pending_block_index;
-		}
-
-		group_lower_bound = group_upper_bound + 1;
-		group_upper_bound = std::pow(2, jacobsthal_index) - group_upper_bound;
-		++jacobsthal_index;
-	}
-
-	DEBUG_MSG_CONTAINER("after: ", values);
+	insertPendingBlocks(values, block_size);
 }
 
 void PmergeMe::sort(void)
