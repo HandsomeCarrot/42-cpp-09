@@ -52,7 +52,7 @@ private:
 	static void	insertPendingGroup(const t_vector & values, t_vector::size_type block_size, t_vector::size_type group_lower_bound, t_vector::size_type group_upper_bound, t_vector::size_type pending_block_count);
 
 public:
-	void	sort(t_vector & values, std::size_t block_size = 1);
+	void	sort(t_vector & values);
 	//TODO void	sortDeque(std::deque<int> & v, std::size_t step = 1);
 	void	sort(void);
 };

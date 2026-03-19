@@ -177,7 +177,7 @@ void PmergeMe::switchPair(t_vector & values, t_vector::size_type pair_start_inde
 
 void PmergeMe::sortPairs(t_vector & values, t_vector::size_type block_size)
 {
-	DEBUG_PHASE("SORT PAIRS | block size = " << block_size);
+	DEBUG_MSG_LABEL("--- ", "block size = " << block_size);
 	for (t_vector::size_type pair_start_index = 0; pair_start_index + (2 * block_size) <= values.size(); pair_start_index += (2 * block_size))
 	{
 		t_vector::size_type left_block_last_index = pair_start_index + block_size - 1;
@@ -189,11 +189,14 @@ void PmergeMe::sortPairs(t_vector & values, t_vector::size_type block_size)
 			DEBUG_MSG("cmp [" << values[right_block_last_index] << " | " << values[left_block_last_index] << "] -> swap");
 		}
 		else
+		{
 			DEBUG_MSG("cmp [" << values[left_block_last_index] << " | " << values[right_block_last_index] << "] -> no swap");
+		}
 	}
 	DEBUG_MSG_CONTAINER("after: ", values);
 }
 
+// maybe make this function simpler, so it takes less variables
 void PmergeMe::insertPendingGroup(
 	const t_vector & values,
 	t_vector::size_type block_size,
@@ -224,8 +227,7 @@ void PmergeMe::insertPendingBlocks(t_vector & values, t_vector::size_type block_
 	t_vector::size_type	jacobsthal_index = 3;
 	t_vector::size_type pending_block_count = ((values.size() / block_size) + 1) / 2;
 
-	DEBUG_PHASE("INSERT | block size = " << block_size);
-	DEBUG_MSG("blocks = " << values.size() / block_size << " | insertions = " << pending_block_count);
+	DEBUG_MSG_LABEL("--- ", "block size = " << block_size << " | blocks = " << values.size() / block_size << " | insertions = " << pending_block_count);
 
 	while (group_lower_bound <= pending_block_count)
 	{
@@ -240,17 +242,23 @@ void PmergeMe::insertPendingBlocks(t_vector & values, t_vector::size_type block_
 	DEBUG_MSG_CONTAINER("after: ", values);
 }
 
-void PmergeMe::sort(t_vector & values, t_vector::size_type block_size)
+void PmergeMe::sort(t_vector & values)
 {
-	if (block_size == 0)
-		throw std::runtime_error("vector sort: step of 0 is invalid");
+	t_vector::size_type	block_size = 1;
 
-	if (block_size >= (values.size() / 2)) //return if one value remaining
-		return ;
+	DEBUG_PHASE("VECTOR | PAIR SORT");
+	while (block_size < (values.size() / 2))
+	{
+		sortPairs(values, block_size);
+		block_size *= 2;
+	}
 
-	sortPairs(values, block_size);
-	sort(values, block_size * 2);
-	insertPendingBlocks(values, block_size);
+	DEBUG_PHASE("VECTOR | INSERT");
+	while (block_size > 1)
+	{
+		block_size /= 2;
+		insertPendingBlocks(values, block_size);
+	}
 }
 
 void PmergeMe::sort(void)
