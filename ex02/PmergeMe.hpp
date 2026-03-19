@@ -102,14 +102,14 @@ std::string	containerToString(const Container &container, std::size_t max_elemen
 #  define DEBUG_MSG_LABEL(label, msg) DEBUG_MSG_LABEL_COLOR(YELLOW, label, msg)
 #  define DEBUG_MSG(msg) DEBUG_MSG_LABEL("> ", msg)
 
-#  define DEBUG_PHASE(description) std::cerr << std::endl << BOLD << CYAN << "══════ " << description << " ══════" << RESET << std::endl
+#  define DEBUG_HEADER(description) std::cerr << std::endl << BOLD << CYAN << "══════ " << description << " ══════" << RESET << std::endl
 
 #  define DEBUG_MSG_CONTAINER(msg, container) DEBUG_MSG_LABEL_COLOR(DIM, msg, containerToString(container, 0))
 # else
 #  define DEBUG_MSG_LABEL_COLOR(color, label, msg)
 #  define DEBUG_MSG_LABEL(label, msg)
 #  define DEBUG_MSG(msg)
-#  define DEBUG_PHASE(description)
+#  define DEBUG_HEADER(description)
 #  define DEBUG_MSG_CONTAINER(msg, container)
 # endif
 
