@@ -7,6 +7,7 @@
 #include <limits>		//std::numeric_limits
 #include <sstream>		//std::istringstream
 #include <stdexcept>	//std::runtime_error
+#include <vector>
 
 /**
  * @brief default constructor
@@ -193,12 +194,13 @@ void PmergeMe::sortPairs(t_vector & values, t_vector::size_type block_size)
 			DEBUG_MSG_LABEL("    > ", "cmp [" << values[left_block_last_index] << " | " << values[right_block_last_index] << "] -> no swap");
 		}
 	}
-	DEBUG_MSG_CONTAINER("  after: ", values);
+	DEBUG_MSG_CONTAINER("  values after: ", values);
 }
 
 // maybe make this function simpler, so it takes less variables
 void PmergeMe::insertPendingGroup(
 	const t_vector & values,
+	std::vector<t_vector::size_type> & index_list,
 	t_vector::size_type block_size,
 	t_vector::size_type group_lower_bound,
 	t_vector::size_type group_upper_bound)
@@ -209,9 +211,22 @@ void PmergeMe::insertPendingGroup(
 
 		DEBUG_MSG_LABEL("      > ", "insert group " << group_upper_bound << ": v[" << current_insert_index << "] = " << values[current_insert_index]);
 
-		(void)current_insert_index;
-		(void)values;
-		//TODO binary search
+		int current_value = values[current_insert_index];
+		t_vector::size_type left = 0;
+		t_vector::size_type right = index_list.size();
+
+		while (left < right)
+		{
+			t_vector::size_type mid = left + ((right - left) / 2);
+
+			if (current_value < values[index_list[mid]])
+				right = mid;
+			else
+				left = mid + 1;
+		}
+
+		index_list.insert(index_list.begin() + left, current_insert_index);
+		DEBUG_MSG_LABEL("        > ", "inserted at index_list[" << left << "]");
 
 		--group_upper_bound;
 	}
@@ -222,9 +237,30 @@ void PmergeMe::insertPendingBlocks(t_vector & values, t_vector::size_type block_
 	t_vector::size_type group_upper_bound = 3;
 	t_vector::size_type group_lower_bound = 2;
 	t_vector::size_type	jacobsthal_index = 3;
-	t_vector::size_type pending_block_count = ((values.size() / block_size) + 1) / 2;
+	t_vector::size_type block_count = values.size() / block_size;
+	t_vector::size_type pending_block_count = (block_count + 1) / 2;
 
 	DEBUG_MSG_LABEL("  > ", "block size = " << block_size << " | blocks = " << values.size() / block_size << " | insertions = " << pending_block_count);
+	
+	if (pending_block_count <= 1)
+	{
+		DEBUG_MSG_LABEL("  > ", DIM << "nothing changed" << RESET);
+		return ;
+	}
+
+	std::vector<t_vector::size_type> index_list;
+	index_list.reserve(block_count);
+
+	//insert smaller value of first block pair
+	if (block_count > 0)
+		index_list.push_back(block_size - 1);
+
+	//insert larger values of all block pairs
+	for (t_vector::size_type block_number = 2; block_number <= block_count; block_number += 2)
+		index_list.push_back((block_number * block_size) - 1);
+		
+	DEBUG_MSG_CONTAINER("  indexes before: ", index_list);
+
 
 	while (group_lower_bound <= pending_block_count)
 	{
@@ -232,13 +268,15 @@ void PmergeMe::insertPendingBlocks(t_vector & values, t_vector::size_type block_
 	
 		DEBUG_MSG_LABEL("    > ", "groups " << next_block_index << ".." << group_lower_bound);
 
-		insertPendingGroup(values, block_size, group_lower_bound, next_block_index);
+		insertPendingGroup(values, index_list, block_size, group_lower_bound, next_block_index);
 
 		group_lower_bound = group_upper_bound + 1;
 		group_upper_bound = std::pow(2, jacobsthal_index) - group_upper_bound;
 		++jacobsthal_index;
 	}
-	DEBUG_MSG_CONTAINER("  after: ", values);
+
+	DEBUG_MSG_CONTAINER("  indexes after: ", index_list);
+	DEBUG_MSG_CONTAINER("  values after: ", values);
 }
 
 void PmergeMe::sort(t_vector & values)
@@ -253,6 +291,7 @@ void PmergeMe::sort(t_vector & values)
 	}
 
 	DEBUG_MSG("insert");
+
 	while (block_size > 1)
 	{
 		block_size /= 2;
@@ -263,7 +302,7 @@ void PmergeMe::sort(t_vector & values)
 void PmergeMe::sort(void)
 {
 	DEBUG_HEADER("VECTOR");
-	DEBUG_MSG_CONTAINER("given: ", _vector_container);
+	DEBUG_MSG_CONTAINER("given values: ", _vector_container);
 	// add timer
 	sort(_vector_container);
 	// sort other container
