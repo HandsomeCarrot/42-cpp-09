@@ -12,11 +12,7 @@
 /**
  * @brief default constructor
 */
-PmergeMe::PmergeMe(void) :
-	_vector_sorted(false),
-	_vector_comparison_count(0),
-	_deque_sorted(false),
-	_deque_comparison_count(0)
+PmergeMe::PmergeMe(void)
 {
 	DEBUG_MSG_LABEL(0, "[PmergeMe] ", "constructor(default)");
 }
@@ -29,13 +25,7 @@ PmergeMe::PmergeMe(void) :
 PmergeMe::PmergeMe(const PmergeMe &other)
 {
 	DEBUG_MSG_LABEL(0, "[PmergeMe] ", "constructor(copy)");
-
-	this->_vector_container = other._vector_container;
-	this->_vector_sorted = other._vector_sorted;
-	this->_vector_comparison_count = other._vector_comparison_count;
-	this->_deque_container = other._deque_container;
-	this->_deque_sorted = other._deque_sorted;
-	this->_deque_comparison_count = other._deque_comparison_count;
+	(void)other;
 }
 
 /**
@@ -56,15 +46,7 @@ PmergeMe::~PmergeMe(void)
 PmergeMe	&PmergeMe::operator=(const PmergeMe &other)
 {
 	DEBUG_MSG_LABEL(0, "[PmergeMe] ", "operator=");
-	if (this != &other)
-	{
-		this->_vector_container = other._vector_container;
-		this->_vector_sorted = other._vector_sorted;
-		this->_vector_comparison_count = other._vector_comparison_count;
-		this->_deque_container = other._deque_container;
-		this->_deque_sorted = other._deque_sorted;
-		this->_deque_comparison_count = other._deque_comparison_count;
-	}
+	(void)other;
 	return (*this);
 }
 
@@ -370,7 +352,6 @@ void PmergeMe::sort(t_vector & values)
 void PmergeMe::sort(void)
 {
 	DEBUG_HEADER("VECTOR");
-	DEBUG_MSG_CONTAINER(0, "given values: ", _vector_container);
 	// add timer
 	sort(_vector_container);
 	// sort other container

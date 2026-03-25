@@ -27,11 +27,10 @@ private:
 // ----- De/Constructors ----- //
 private:
 	PmergeMe(void);
-public:
 	PmergeMe(const PmergeMe &other);
-	~PmergeMe(void);
-
 	PmergeMe	&operator=(const PmergeMe &other);
+public:
+	~PmergeMe(void);
 
 	PmergeMe(const std::string & value_sequence);
 
@@ -66,6 +65,11 @@ public:
 };
 
 std::ostream	&operator<<(std::ostream &os, const PmergeMe &c);
+
+
+// --------------- OTHER --------------- //
+
+
 template <typename Container>
 std::string	containerToString(const Container &container, std::size_t max_elements = 6)
 {
