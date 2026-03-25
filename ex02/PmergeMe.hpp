@@ -14,13 +14,14 @@ public:
 	typedef std::vector<int>	t_vector;
 	typedef std::deque<int>		t_deque;
 private:
+	t_vector	_unsorted_vector;
+	bool		_sorted;
+
 	t_vector		_vector_container;
-	bool			_vector_sorted;
 	unsigned int	_vector_comparison_count;
 	//timer result for vector
 
 	t_deque			_deque_container;
-	bool			_deque_sorted;
 	unsigned int	_deque_comparison_count;
 	//timer result for deque
 
@@ -36,6 +37,9 @@ public:
 
 // ----- Getters ----- //
 public:
+	const t_vector	getUnsortedVector(void) const;
+	bool			getSortedStatus(void) const;
+
 	const t_vector	getVectorContainer(void) const;
 	const t_deque	getDequeContainer(void) const;
 	
@@ -58,9 +62,9 @@ private:
 	void	insertPendingBlocks(t_vector & values, t_vector::size_type block_size);
 	void	insertPendingGroup(const t_vector & values, std::vector<t_vector::size_type> & index_list, t_vector::size_type block_size, t_vector::size_type group_lower_bound, t_vector::size_type group_upper_bound);
 
-public:
 	void	sort(t_vector & values);
-	//TODO void	sortDeque(std::deque<int> & v, std::size_t step = 1);
+	//TODO void	sortDeque(std::deque<int> & values);
+public:
 	void	sort(void);
 };
 

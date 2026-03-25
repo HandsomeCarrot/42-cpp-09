@@ -101,9 +101,8 @@ namespace
  *     - contains a negative number
  */
 PmergeMe::PmergeMe(const std::string & value_sequence) :
-	_vector_sorted(false),
+	_sorted(false),
 	_vector_comparison_count(0),
-	_deque_sorted(false),
 	_deque_comparison_count(0)
 {
 	DEBUG_MSG_LABEL(0, "[PmergeMe] ", "constructor(param)");
@@ -115,12 +114,23 @@ PmergeMe::PmergeMe(const std::string & value_sequence) :
 	{
 		int	parsed_value = parseValueToken(token);
 
+		_unsorted_vector.push_back(parsed_value);
 		_vector_container.push_back(parsed_value);
 		_deque_container.push_back(parsed_value);
 	}
 
 	if (_vector_container.empty())
 		throw std::runtime_error("sequence is empty");
+}
+
+const PmergeMe::t_vector PmergeMe::getUnsortedVector(void) const
+{
+	return (_unsorted_vector);
+}
+
+bool PmergeMe::getSortedStatus(void) const
+{
+	return (_sorted);
 }
 
 const PmergeMe::t_vector PmergeMe::getVectorContainer(void) const
@@ -131,16 +141,6 @@ const PmergeMe::t_vector PmergeMe::getVectorContainer(void) const
 const PmergeMe::t_deque PmergeMe::getDequeContainer(void) const
 {
 	return (_deque_container);
-}
-
-bool PmergeMe::getVectorSortedStatus(void) const
-{
-	return (_vector_sorted);
-}
-
-bool PmergeMe::getDequeSortedStatus(void) const
-{
-	return (_deque_sorted);
 }
 
 unsigned int PmergeMe::getVectorComparisonCount(void) const
@@ -163,8 +163,15 @@ unsigned int PmergeMe::getDequeComparisonCount(void) const
 */
 std::ostream	&operator<<(std::ostream &os, const PmergeMe &c)
 {
-	//TODO
-	(void)c;
+	os << "Before: " << containerToString(c.getUnsortedVector()) << std::endl;
+
+	os << "After: ";
+	if (c.getSortedStatus() == true)
+		os << containerToString(c.getVectorContainer()) << std::endl;
+	else
+		os << "not sorted" << std::endl;
+
+	//print times
 	return (os);
 }
 
@@ -355,4 +362,6 @@ void PmergeMe::sort(void)
 	// add timer
 	sort(_vector_container);
 	// sort other container
+
+	_sorted = true;
 }
