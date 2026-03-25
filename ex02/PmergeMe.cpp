@@ -244,15 +244,28 @@ void PmergeMe::insertPendingGroup(
 	t_vector::size_type group_lower_bound,
 	t_vector::size_type group_upper_bound)
 {
-	while (group_upper_bound >= group_lower_bound)
+	t_vector::size_type current_group = group_upper_bound;
+
+	while (current_group >= group_lower_bound)
 	{
-		t_vector::size_type current_insert_index = ((2 * group_upper_bound) - 1) * block_size - 1;
+		t_vector::size_type current_insert_index = ((2 * current_group) - 1) * block_size - 1;
 
-		DEBUG_MSG(3, "insert group " << group_upper_bound << ": v[" << current_insert_index << "] = " << values[current_insert_index]);
+		DEBUG_MSG(3, "insert group " << current_group << ": v[" << current_insert_index << "] = " << values[current_insert_index]);
 
-		int current_value = values[current_insert_index];
-		t_vector::size_type left = 0;
-		t_vector::size_type right = index_list.size();
+		int					current_value = values[current_insert_index];
+		t_vector::size_type	partner_index = current_insert_index + block_size;
+		t_vector::size_type	left = 0;
+		t_vector::size_type	right = 0;
+
+		if (partner_index >= values.size())
+			right = index_list.size();
+		else
+		{
+			while (right < index_list.size() && index_list[right] != partner_index)
+				++right;
+		}
+
+		DEBUG_MSG(4, DIM << "binary search window [" << left << ", " << right << ")" << RESET);
 
 		while (left < right)
 		{
@@ -267,7 +280,7 @@ void PmergeMe::insertPendingGroup(
 		index_list.insert(index_list.begin() + left, current_insert_index);
 		DEBUG_MSG(4, "inserted at index_list[" << left << "]");
 
-		--group_upper_bound;
+		--current_group;
 	}
 }
 
@@ -279,7 +292,7 @@ void PmergeMe::insertPendingBlocks(t_vector & values, t_vector::size_type block_
 	t_vector::size_type block_count = values.size() / block_size;
 	t_vector::size_type pending_block_count = (block_count + 1) / 2;
 
-	DEBUG_MSG(1, "block size = " << block_size << " | blocks = " << values.size() / block_size << " | insertions = " << pending_block_count);
+	DEBUG_MSG(1, "block size = " << block_size << " | blocks = " << block_count << " | insertions = " << pending_block_count);
 	
 	if (pending_block_count <= 1)
 	{
@@ -297,7 +310,6 @@ void PmergeMe::insertPendingBlocks(t_vector & values, t_vector::size_type block_
 	//insert larger values of all block pairs
 	for (t_vector::size_type block_number = 2; block_number <= block_count; block_number += 2)
 		index_list.push_back((block_number * block_size) - 1);
-
 	DEBUG_MSG_CONTAINER(1, "indexes before: ", index_list);
 
 	while (group_lower_bound <= pending_block_count)
@@ -314,6 +326,24 @@ void PmergeMe::insertPendingBlocks(t_vector & values, t_vector::size_type block_
 	}
 
 	DEBUG_MSG_CONTAINER(1, "indexes after: ", index_list);
+
+	t_vector sorted_values;
+	sorted_values.reserve(values.size());
+
+	for (t_vector::size_type i = 0; i < index_list.size(); ++i)
+	{
+		t_vector::size_type block_end = index_list[i];
+		t_vector::size_type block_start = block_end - block_size + 1;
+
+		for (t_vector::size_type j = block_start; j <= block_end; ++j)
+			sorted_values.push_back(values[j]);
+	}
+
+	for (t_vector::size_type i = block_count * block_size; i < values.size(); ++i)
+		sorted_values.push_back(values[i]);
+
+	values = sorted_values;
+
 	DEBUG_MSG_CONTAINER(1, "values after: ", values);
 }
 
