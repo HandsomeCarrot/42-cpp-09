@@ -14,9 +14,11 @@
 */
 PmergeMe::PmergeMe(void) :
 	_vector_sorted(false),
-	_deque_sorted(false)
+	_vector_comparison_count(0),
+	_deque_sorted(false),
+	_deque_comparison_count(0)
 {
-	DEBUG_MSG_LABEL("[PmergeMe] ", "ctor(default)");
+	DEBUG_MSG_LABEL(0, "[PmergeMe] ", "constructor(default)");
 }
 
 /**
@@ -26,12 +28,14 @@ PmergeMe::PmergeMe(void) :
 */
 PmergeMe::PmergeMe(const PmergeMe &other)
 {
-	DEBUG_MSG_LABEL("[PmergeMe] ", "ctor(copy)");
+	DEBUG_MSG_LABEL(0, "[PmergeMe] ", "constructor(copy)");
 
 	this->_vector_container = other._vector_container;
 	this->_vector_sorted = other._vector_sorted;
+	this->_vector_comparison_count = other._vector_comparison_count;
 	this->_deque_container = other._deque_container;
 	this->_deque_sorted = other._deque_sorted;
+	this->_deque_comparison_count = other._deque_comparison_count;
 }
 
 /**
@@ -39,7 +43,7 @@ PmergeMe::PmergeMe(const PmergeMe &other)
 */
 PmergeMe::~PmergeMe(void)
 {
-	DEBUG_MSG_LABEL("[PmergeMe] ", "dtor");
+	DEBUG_MSG_LABEL(0, "[PmergeMe] ", "deconstructor");
 }
 
 /**
@@ -51,13 +55,15 @@ PmergeMe::~PmergeMe(void)
 */
 PmergeMe	&PmergeMe::operator=(const PmergeMe &other)
 {
-	DEBUG_MSG_LABEL("[PmergeMe] ", "operator=");
+	DEBUG_MSG_LABEL(0, "[PmergeMe] ", "operator=");
 	if (this != &other)
 	{
 		this->_vector_container = other._vector_container;
 		this->_vector_sorted = other._vector_sorted;
+		this->_vector_comparison_count = other._vector_comparison_count;
 		this->_deque_container = other._deque_container;
 		this->_deque_sorted = other._deque_sorted;
+		this->_deque_comparison_count = other._deque_comparison_count;
 	}
 	return (*this);
 }
@@ -114,9 +120,11 @@ namespace
  */
 PmergeMe::PmergeMe(const std::string & value_sequence) :
 	_vector_sorted(false),
-	_deque_sorted(false)
+	_vector_comparison_count(0),
+	_deque_sorted(false),
+	_deque_comparison_count(0)
 {
-	DEBUG_MSG_LABEL("[PmergeMe] ", "ctor(param)");
+	DEBUG_MSG_LABEL(0, "[PmergeMe] ", "constructor(param)");
 
 	std::istringstream	token_stream(value_sequence);
 	std::string			token;
@@ -153,6 +161,16 @@ bool PmergeMe::getDequeSortedStatus(void) const
 	return (_deque_sorted);
 }
 
+unsigned int PmergeMe::getVectorComparisonCount(void) const
+{
+	return (_vector_comparison_count);
+}
+
+unsigned int PmergeMe::getDequeComparisonCount(void) const
+{
+	return (_deque_comparison_count);
+}
+
 /** 
  * @brief output stream operator
  * 
@@ -168,6 +186,34 @@ std::ostream	&operator<<(std::ostream &os, const PmergeMe &c)
 	return (os);
 }
 
+/**
+ * @brief Compares two values while tracking the number of comparisons made.
+ *
+ * Increments @p comparison_counter before returning the arithmetic difference
+ * between @p value1 and @p value2. If the counter has already reached its
+ * maximum representable value, a warning is printed before the increment,
+ * meaning the next increment wraps according to `unsigned int` semantics.
+ *
+ * @param value1 first value to compare
+ * @param value2 second value to compare
+ * @param comparison_counter reference to the comparison counter to update
+ *
+ * @return a positive value if @p value1 is greater than @p value2, zero if
+ * they are equal, or a negative value otherwise
+ */
+long long PmergeMe::compare(int value1, int value2, unsigned int & comparison_counter, int debug_msg_indent_lvl)
+{
+	if (comparison_counter == std::numeric_limits<unsigned int>::max())
+		std::cerr << "Warning: comparison count overflowed!" << std::endl;
+
+	++comparison_counter;
+
+	DEBUG_MSG(debug_msg_indent_lvl, "cmp(" << comparison_counter << ") -> [" << value1 << " | " << value2 << "]");
+	(void)debug_msg_indent_lvl;
+
+	return (value1 - value2);
+}
+
 void PmergeMe::switchPair(t_vector & values, t_vector::size_type pair_start_index, t_vector::size_type block_size)
 {
 	t_vector::iterator left_block_begin = values.begin() + pair_start_index;
@@ -178,23 +224,16 @@ void PmergeMe::switchPair(t_vector & values, t_vector::size_type pair_start_inde
 
 void PmergeMe::sortPairs(t_vector & values, t_vector::size_type block_size)
 {
-	DEBUG_MSG_LABEL("  > ", "block size = " << block_size);
+	DEBUG_MSG(1, "block size = " << block_size);
 	for (t_vector::size_type pair_start_index = 0; pair_start_index + (2 * block_size) <= values.size(); pair_start_index += (2 * block_size))
 	{
 		t_vector::size_type left_block_last_index = pair_start_index + block_size - 1;
 		t_vector::size_type right_block_last_index = left_block_last_index + block_size;
 
-		if (values[left_block_last_index] > values[right_block_last_index])
-		{
+		if (compare(values[left_block_last_index], values[right_block_last_index], _vector_comparison_count, 2) > 0)
 			switchPair(values, pair_start_index, block_size);
-			DEBUG_MSG_LABEL("    > ", "cmp [" << values[right_block_last_index] << " | " << values[left_block_last_index] << "] -> swap");
-		}
-		else
-		{
-			DEBUG_MSG_LABEL("    > ", "cmp [" << values[left_block_last_index] << " | " << values[right_block_last_index] << "] -> no swap");
-		}
 	}
-	DEBUG_MSG_CONTAINER("  values after: ", values);
+	DEBUG_MSG_CONTAINER(1, "values after: ", values);
 }
 
 // maybe make this function simpler, so it takes less variables
@@ -209,7 +248,7 @@ void PmergeMe::insertPendingGroup(
 	{
 		t_vector::size_type current_insert_index = ((2 * group_upper_bound) - 1) * block_size - 1;
 
-		DEBUG_MSG_LABEL("      > ", "insert group " << group_upper_bound << ": v[" << current_insert_index << "] = " << values[current_insert_index]);
+		DEBUG_MSG(3, "insert group " << group_upper_bound << ": v[" << current_insert_index << "] = " << values[current_insert_index]);
 
 		int current_value = values[current_insert_index];
 		t_vector::size_type left = 0;
@@ -219,14 +258,14 @@ void PmergeMe::insertPendingGroup(
 		{
 			t_vector::size_type mid = left + ((right - left) / 2);
 
-			if (current_value < values[index_list[mid]])
+			if (compare(current_value, values[index_list[mid]], _vector_comparison_count, 5) < 0)
 				right = mid;
 			else
 				left = mid + 1;
 		}
 
 		index_list.insert(index_list.begin() + left, current_insert_index);
-		DEBUG_MSG_LABEL("        > ", "inserted at index_list[" << left << "]");
+		DEBUG_MSG(4, "inserted at index_list[" << left << "]");
 
 		--group_upper_bound;
 	}
@@ -240,11 +279,11 @@ void PmergeMe::insertPendingBlocks(t_vector & values, t_vector::size_type block_
 	t_vector::size_type block_count = values.size() / block_size;
 	t_vector::size_type pending_block_count = (block_count + 1) / 2;
 
-	DEBUG_MSG_LABEL("  > ", "block size = " << block_size << " | blocks = " << values.size() / block_size << " | insertions = " << pending_block_count);
+	DEBUG_MSG(1, "block size = " << block_size << " | blocks = " << values.size() / block_size << " | insertions = " << pending_block_count);
 	
 	if (pending_block_count <= 1)
 	{
-		DEBUG_MSG_LABEL("  > ", DIM << "nothing changed" << RESET);
+		DEBUG_MSG(2, DIM << "nothing changed" << RESET);
 		return ;
 	}
 
@@ -258,15 +297,14 @@ void PmergeMe::insertPendingBlocks(t_vector & values, t_vector::size_type block_
 	//insert larger values of all block pairs
 	for (t_vector::size_type block_number = 2; block_number <= block_count; block_number += 2)
 		index_list.push_back((block_number * block_size) - 1);
-		
-	DEBUG_MSG_CONTAINER("  indexes before: ", index_list);
 
+	DEBUG_MSG_CONTAINER(1, "indexes before: ", index_list);
 
 	while (group_lower_bound <= pending_block_count)
 	{
 		t_vector::size_type next_block_index = std::min(group_upper_bound, pending_block_count);
 	
-		DEBUG_MSG_LABEL("    > ", "groups " << next_block_index << ".." << group_lower_bound);
+		DEBUG_MSG(2, "groups " << next_block_index << ".." << group_lower_bound);
 
 		insertPendingGroup(values, index_list, block_size, group_lower_bound, next_block_index);
 
@@ -275,22 +313,22 @@ void PmergeMe::insertPendingBlocks(t_vector & values, t_vector::size_type block_
 		++jacobsthal_index;
 	}
 
-	DEBUG_MSG_CONTAINER("  indexes after: ", index_list);
-	DEBUG_MSG_CONTAINER("  values after: ", values);
+	DEBUG_MSG_CONTAINER(1, "indexes after: ", index_list);
+	DEBUG_MSG_CONTAINER(1, "values after: ", values);
 }
 
 void PmergeMe::sort(t_vector & values)
 {
 	t_vector::size_type	block_size = 1;
 
-	DEBUG_MSG("pair sort");
+	DEBUG_MSG(0, BOLD << "PAIR SORT" << RESET);
 	while (block_size < (values.size() / 2))
 	{
 		sortPairs(values, block_size);
 		block_size *= 2;
 	}
 
-	DEBUG_MSG("insert");
+	DEBUG_MSG(0, BOLD << "INSERT" << RESET);
 
 	while (block_size > 1)
 	{
@@ -302,7 +340,7 @@ void PmergeMe::sort(t_vector & values)
 void PmergeMe::sort(void)
 {
 	DEBUG_HEADER("VECTOR");
-	DEBUG_MSG_CONTAINER("given values: ", _vector_container);
+	DEBUG_MSG_CONTAINER(0, "given values: ", _vector_container);
 	// add timer
 	sort(_vector_container);
 	// sort other container

@@ -14,12 +14,14 @@ public:
 	typedef std::vector<int>	t_vector;
 	typedef std::deque<int>		t_deque;
 private:
-	t_vector	_vector_container;
-	bool		_vector_sorted;
+	t_vector		_vector_container;
+	bool			_vector_sorted;
+	unsigned int	_vector_comparison_count;
 	//timer result for vector
 
-	t_deque	_deque_container;
-	bool	_deque_sorted;
+	t_deque			_deque_container;
+	bool			_deque_sorted;
+	unsigned int	_deque_comparison_count;
 	//timer result for deque
 
 // ----- De/Constructors ----- //
@@ -41,15 +43,21 @@ public:
 	bool	getVectorSortedStatus(void) const;
 	bool	getDequeSortedStatus(void) const;
 
+	unsigned int	getVectorComparisonCount(void) const;
+	unsigned int	getDequeComparisonCount(void) const;
+
 	//TODO something	getVectorTimer(void) const;
 	//TODO something	getDequeTimer(void) const;
 
 // ----- Functions ----- //
 private:
-	static void	switchPair(t_vector & values, t_vector::size_type pair_start_index, t_vector::size_type block_size);
-	static void	sortPairs(t_vector & values, t_vector::size_type block_size);
-	static void	insertPendingBlocks(t_vector & values, t_vector::size_type block_size);
-	static void	insertPendingGroup(const t_vector & values, std::vector<t_vector::size_type> & index_list, t_vector::size_type block_size, t_vector::size_type group_lower_bound, t_vector::size_type group_upper_bound);
+	long long	compare(int value1, int value2, unsigned int & comparison_counter, int debug_msg_indent_lvl);
+
+	void	switchPair(t_vector & values, t_vector::size_type pair_start_index, t_vector::size_type block_size);
+	void	sortPairs(t_vector & values, t_vector::size_type block_size);
+
+	void	insertPendingBlocks(t_vector & values, t_vector::size_type block_size);
+	void	insertPendingGroup(const t_vector & values, std::vector<t_vector::size_type> & index_list, t_vector::size_type block_size, t_vector::size_type group_lower_bound, t_vector::size_type group_upper_bound);
 
 public:
 	void	sort(t_vector & values);
@@ -58,7 +66,6 @@ public:
 };
 
 std::ostream	&operator<<(std::ostream &os, const PmergeMe &c);
-
 template <typename Container>
 std::string	containerToString(const Container &container, std::size_t max_elements = 6)
 {
@@ -98,19 +105,25 @@ std::string	containerToString(const Container &container, std::size_t max_elemen
 
 # ifdef DEBUG
 #  include <iostream>
-#  define DEBUG_MSG_LABEL_COLOR(color, label, msg) std::cerr << color << label << RESET << msg << std::endl
-#  define DEBUG_MSG_LABEL(label, msg) DEBUG_MSG_LABEL_COLOR(YELLOW, label, msg)
-#  define DEBUG_MSG(msg) DEBUG_MSG_LABEL("> ", msg)
+
+inline std::string indent(int level)
+{
+	return (std::string(level * 2, ' '));
+}
+
+#  define DEBUG_MSG_LABEL_COLOR(level, color, label, msg) std::cerr << indent(level) << color << label << RESET << msg << std::endl
+#  define DEBUG_MSG_LABEL(level, label, msg) DEBUG_MSG_LABEL_COLOR(level, YELLOW, label, msg)
+#  define DEBUG_MSG(level, msg) DEBUG_MSG_LABEL(level, "> ", msg)
 
 #  define DEBUG_HEADER(description) std::cerr << std::endl << BOLD << CYAN << "══════ " << description << " ══════" << RESET << std::endl
 
-#  define DEBUG_MSG_CONTAINER(msg, container) DEBUG_MSG_LABEL_COLOR(DIM, msg, containerToString(container, 0))
+#  define DEBUG_MSG_CONTAINER(level, msg, container) DEBUG_MSG(level, DIM << msg << containerToString(container, 0) << RESET)
 # else
-#  define DEBUG_MSG_LABEL_COLOR(color, label, msg)
-#  define DEBUG_MSG_LABEL(label, msg)
-#  define DEBUG_MSG(msg)
+#  define DEBUG_MSG_LABEL_COLOR(level, color, label, msg)
+#  define DEBUG_MSG_LABEL(level, label, msg)
+#  define DEBUG_MSG(level, msg)
 #  define DEBUG_HEADER(description)
-#  define DEBUG_MSG_CONTAINER(msg, container)
+#  define DEBUG_MSG_CONTAINER(level, msg, container)
 # endif
 
 #endif /* PMERGEME_HPP */
