@@ -3,6 +3,7 @@
 #include <cerrno>		//errno, ERANGE
 #include <cmath>		//std::pow
 #include <cstdlib>		//std::strtol
+#include <ctime>		//std::clock, std::clock_t, CLOCKS_PER_SEC
 #include <iostream>		//std::cerr/cout/endl
 #include <limits>		//std::numeric_limits
 #include <sstream>		//std::istringstream
@@ -107,7 +108,9 @@ namespace
 PmergeMe::PmergeMe(const std::string & value_sequence) :
 	_sorted(false),
 	_vector_comparison_count(0),
-	_deque_comparison_count(0)
+	_vector_timer(0),
+	_deque_comparison_count(0),
+	_deque_timer(0)
 {
 	DEBUG_MSG_LABEL(0, "[PmergeMe] ", "constructor(param)");
 
@@ -157,23 +160,57 @@ unsigned int PmergeMe::getDequeComparisonCount(void) const
 	return (_deque_comparison_count);
 }
 
-#ifdef DEBUG
+std::clock_t PmergeMe::getVectorTimer(void) const
+{
+	return (_vector_timer);
+}
+
+std::clock_t PmergeMe::getDequeTimer(void) const
+{
+	return (_deque_timer);
+}
+
+void PmergeMe::setVectorTimer(std::clock_t time)
+{
+	_vector_timer = time;
+}
+
+void PmergeMe::getDequeTimer(std::clock_t time)
+{
+	_deque_timer = time;
+}
+
 namespace
 {
+#ifdef DEBUG
 	unsigned int getMaxComparisons(unsigned int element_count)
 	{
 		unsigned int max_comparisons = 0;
 		for (unsigned int k = 1; k <= element_count; ++k)
 		{
-			double val = (3.0 * static_cast<double>(k)) / 4.0;
+			double val = (3.0 * k) / 4.0;
 			double log2_val = std::log(val) / std::log(2.0);
 			unsigned int term = static_cast<unsigned int>(std::ceil(log2_val));
 			max_comparisons += term;
 		}
 		return (max_comparisons);
 	}
-}
 #endif /* DEBUG */
+
+	std::string clockToString(std::clock_t ticks)
+	{
+		unsigned long long us = static_cast<unsigned long long>((static_cast<double>(ticks) * 1000000.0) / CLOCKS_PER_SEC);
+
+		unsigned long long s = us / 1000000;
+		us %= 1000000;
+		unsigned long long ms = us / 1000;
+		us %= 1000;
+
+		std::ostringstream time_string;
+		time_string << s << " s " << ms << " ms " << us << " us";
+		return (time_string.str());
+	}
+}
 
 /** 
  * @brief output stream operator
@@ -191,10 +228,28 @@ std::ostream	&operator<<(std::ostream &os, const PmergeMe &c)
 #ifdef DEBUG
 	os << "After : " << containerToString(c.getDequeContainer()) << " (deque)" << std::endl;
 	os << "sorted: " << std::boolalpha << c.getSortedStatus() << std::endl;
-	os << "comparisons: " << getMaxComparisons(c.getUnsortedVector().size()) << " ? (" << c.getVectorComparisonCount() << " | " << c.getDequeComparisonCount() << ") <max ? (vector | deque)>" << std::endl;
+
+	os << "comparisons: max = " \
+		<< getMaxComparisons(c.getUnsortedVector().size()) \
+		<< ", vector = " << c.getVectorComparisonCount() \
+		<< ", deque = " \
+		<< c.getDequeComparisonCount() \
+		<< std::endl;
+
 #endif /* DEBUG */
 
-	//TODO: print times
+	os << "Time to process a range of " \
+		<< c.getUnsortedVector().size() \
+		<< " elements with std::vector: " \
+		<< clockToString(c.getVectorTimer()) \
+		<< std::endl;
+
+	os << "Time to process a range of " \
+		<< c.getUnsortedVector().size() \
+		<< " elements with std::deque : " \
+		<< clockToString(c.getDequeTimer()) \
+		<< std::endl;
+
 	return (os);
 }
 
@@ -361,6 +416,8 @@ void PmergeMe::insertPendingBlocks(t_vector & values, t_vector::size_type block_
 
 void PmergeMe::sort(t_vector & values)
 {
+	setVectorTimer(std::clock());
+
 	t_vector::size_type	block_size = 1;
 
 	DEBUG_MSG(0, BOLD << "PAIR SORT" << RESET);
@@ -377,13 +434,15 @@ void PmergeMe::sort(t_vector & values)
 		block_size /= 2;
 		insertPendingBlocks(values, block_size);
 	}
+
+	setVectorTimer(std::clock() - getVectorTimer());
 }
 
 void PmergeMe::sort(void)
 {
 	DEBUG_HEADER("VECTOR");
-	// add timer
 	sort(_vector_container);
+
 	// sort other container
 
 	_sorted = true;

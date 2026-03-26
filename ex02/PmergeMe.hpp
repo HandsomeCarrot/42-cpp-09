@@ -1,6 +1,7 @@
 #ifndef PMERGEME_HPP
 # define PMERGEME_HPP
 
+#include <ctime>	//std::clock_t
 #include <deque>	//std::deque
 #include <ostream>	//std::ostream
 #include <sstream>	//std::ostringstream
@@ -19,11 +20,11 @@ private:
 
 	t_vector		_vector_container;
 	unsigned int	_vector_comparison_count;
-	//timer result for vector
+	std::clock_t	_vector_timer;
 
 	t_deque			_deque_container;
 	unsigned int	_deque_comparison_count;
-	//timer result for deque
+	std::clock_t	_deque_timer;
 
 // ----- De/Constructors ----- //
 private:
@@ -35,7 +36,7 @@ public:
 
 	PmergeMe(const std::string & value_sequence);
 
-// ----- Getters ----- //
+// ----- Getters / Setters ----- //
 public:
 	const t_vector	getUnsortedVector(void) const;
 	bool			getSortedStatus(void) const;
@@ -46,8 +47,11 @@ public:
 	unsigned int	getVectorComparisonCount(void) const;
 	unsigned int	getDequeComparisonCount(void) const;
 
-	//TODO something	getVectorTimer(void) const;
-	//TODO something	getDequeTimer(void) const;
+	std::clock_t	getVectorTimer(void) const;
+	std::clock_t	getDequeTimer(void) const;
+
+	void	setVectorTimer(std::clock_t time);
+	void	getDequeTimer(std::clock_t time);
 
 // ----- Functions ----- //
 private:
