@@ -42,9 +42,6 @@ public:
 
 	const t_vector	getVectorContainer(void) const;
 	const t_deque	getDequeContainer(void) const;
-	
-	bool	getVectorSortedStatus(void) const;
-	bool	getDequeSortedStatus(void) const;
 
 	unsigned int	getVectorComparisonCount(void) const;
 	unsigned int	getDequeComparisonCount(void) const;
@@ -80,6 +77,10 @@ std::string	containerToString(const Container &container, std::size_t max_elemen
 	typename Container::const_iterator	it = container.begin();
 	std::ostringstream					oss;
 	std::size_t							count = 0;
+
+#ifdef DEBUG
+	max_elements = 0;
+#endif /* DEBUG */
 
 	oss << "[ ";
 

@@ -7,7 +7,11 @@
 #include <limits>		//std::numeric_limits
 #include <sstream>		//std::istringstream
 #include <stdexcept>	//std::runtime_error
-#include <vector>
+#include <vector>		//std::vector
+
+#ifdef DEBUG
+# include <ios>			//std::boolalpha
+#endif /* DEBUG */
 
 /**
  * @brief default constructor
@@ -153,6 +157,24 @@ unsigned int PmergeMe::getDequeComparisonCount(void) const
 	return (_deque_comparison_count);
 }
 
+#ifdef DEBUG
+namespace
+{
+	unsigned int getMaxComparisons(unsigned int element_count)
+	{
+		unsigned int max_comparisons = 0;
+		for (unsigned int k = 1; k <= element_count; ++k)
+		{
+			double val = (3.0 * static_cast<double>(k)) / 4.0;
+			double log2_val = std::log(val) / std::log(2.0);
+			unsigned int term = static_cast<unsigned int>(std::ceil(log2_val));
+			max_comparisons += term;
+		}
+		return (max_comparisons);
+	}
+}
+#endif /* DEBUG */
+
 /** 
  * @brief output stream operator
  * 
@@ -164,14 +186,15 @@ unsigned int PmergeMe::getDequeComparisonCount(void) const
 std::ostream	&operator<<(std::ostream &os, const PmergeMe &c)
 {
 	os << "Before: " << containerToString(c.getUnsortedVector()) << std::endl;
+	os << "After : " << containerToString(c.getVectorContainer()) << std::endl;
 
-	os << "After: ";
-	if (c.getSortedStatus() == true)
-		os << containerToString(c.getVectorContainer()) << std::endl;
-	else
-		os << "not sorted" << std::endl;
+#ifdef DEBUG
+	os << "After : " << containerToString(c.getDequeContainer()) << " (deque)" << std::endl;
+	os << "sorted: " << std::boolalpha << c.getSortedStatus() << std::endl;
+	os << "comparisons: " << getMaxComparisons(c.getUnsortedVector().size()) << " ? (" << c.getVectorComparisonCount() << " | " << c.getDequeComparisonCount() << ") <max ? (vector | deque)>" << std::endl;
+#endif /* DEBUG */
 
-	//print times
+	//TODO: print times
 	return (os);
 }
 
