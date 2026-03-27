@@ -182,20 +182,20 @@ void PmergeMe::getDequeTimer(std::clock_t time)
 
 namespace
 {
-#ifdef DEBUG
-	unsigned int getMaxComparisons(unsigned int element_count)
-	{
-		unsigned int max_comparisons = 0;
-		for (unsigned int k = 1; k <= element_count; ++k)
+	#ifdef DEBUG
+		unsigned int getMaxComparisons(unsigned int element_count)
 		{
-			double val = (3.0 * k) / 4.0;
-			double log2_val = std::log(val) / std::log(2.0);
-			unsigned int term = static_cast<unsigned int>(std::ceil(log2_val));
-			max_comparisons += term;
+			unsigned int max_comparisons = 0;
+			for (unsigned int k = 1; k <= element_count; ++k)
+			{
+				double val = (3.0 * k) / 4.0;
+				double log2_val = std::log(val) / std::log(2.0);
+				unsigned int term = static_cast<unsigned int>(std::ceil(log2_val));
+				max_comparisons += term;
+			}
+			return (max_comparisons);
 		}
-		return (max_comparisons);
-	}
-#endif /* DEBUG */
+	#endif /* DEBUG */
 
 	std::string clockToString(std::clock_t ticks)
 	{
@@ -225,18 +225,18 @@ std::ostream	&operator<<(std::ostream &os, const PmergeMe &c)
 	os << "Before: " << containerToString(c.getUnsortedVector()) << std::endl;
 	os << "After : " << containerToString(c.getVectorContainer()) << std::endl;
 
-#ifdef DEBUG
-	os << "After : " << containerToString(c.getDequeContainer()) << " (deque)" << std::endl;
-	os << "sorted: " << std::boolalpha << c.getSortedStatus() << std::endl;
+	#ifdef DEBUG
+		os << "After : " << containerToString(c.getDequeContainer()) << " (deque)" << std::endl;
+		os << "sorted: " << std::boolalpha << c.getSortedStatus() << std::endl;
+	
+		os << "comparisons: max = " \
+			<< getMaxComparisons(c.getUnsortedVector().size()) \
+			<< ", vector = " << c.getVectorComparisonCount() \
+			<< ", deque = " \
+			<< c.getDequeComparisonCount() \
+			<< std::endl;
 
-	os << "comparisons: max = " \
-		<< getMaxComparisons(c.getUnsortedVector().size()) \
-		<< ", vector = " << c.getVectorComparisonCount() \
-		<< ", deque = " \
-		<< c.getDequeComparisonCount() \
-		<< std::endl;
-
-#endif /* DEBUG */
+	#endif /* DEBUG */
 
 	os << "Time to process a range of " \
 		<< c.getUnsortedVector().size() \
