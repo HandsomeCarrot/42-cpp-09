@@ -10,11 +10,13 @@
 
 class PmergeMe
 {
-// ----- Variables ----- //
+// --------------- Variables --------------- //
 public: 
 	typedef std::vector<int>	t_vector;
 	typedef std::deque<int>		t_deque;
 private:
+	typedef std::vector<t_vector::size_type>	t_index_list;
+
 	t_vector	_unsorted_vector;
 	bool		_sorted;
 
@@ -26,7 +28,7 @@ private:
 	unsigned int	_deque_comparison_count;
 	std::clock_t	_deque_timer;
 
-// ----- De/Constructors ----- //
+// --------------- De/Constructors --------------- //
 private:
 	PmergeMe(void);
 	PmergeMe(const PmergeMe &other);
@@ -36,7 +38,7 @@ public:
 
 	PmergeMe(const std::string & value_sequence);
 
-// ----- Getters / Setters ----- //
+// --------------- Getters / Setters --------------- //
 public:
 	const t_vector	getUnsortedVector(void) const;
 	bool			getSortedStatus(void) const;
@@ -53,15 +55,22 @@ public:
 	void	setVectorTimer(std::clock_t time);
 	void	getDequeTimer(std::clock_t time);
 
-// ----- Functions ----- //
+// -------------------- Functions -------------------- //
 private:
 	long long	compare(int value1, int value2, unsigned int & comparison_counter, int debug_msg_indent_lvl);
 
 	void	switchPair(t_vector & values, t_vector::size_type pair_start_index, t_vector::size_type block_size);
 	void	sortPairs(t_vector & values, t_vector::size_type block_size);
 
-	void	insertPendingBlocks(t_vector & values, t_vector::size_type block_size);
-	void	insertPendingGroup(const t_vector & values, std::vector<t_vector::size_type> & index_list, t_vector::size_type block_size, t_vector::size_type group_lower_bound, t_vector::size_type group_upper_bound);
+	t_vector::size_type	getBlockEndIndex(t_vector::size_type block_number, t_vector::size_type block_size) const;
+	t_vector::size_type	getBlockStartIndex(t_vector::size_type block_end_index, t_vector::size_type block_size) const;
+	t_vector::size_type	findPartnerPosition(const t_index_list & index_list, t_vector::size_type partner_index, t_vector::size_type value_count) const;
+	t_vector::size_type	findInsertionPosition(const t_vector & values, const t_index_list & index_list, int current_value, t_vector::size_type right_bound);
+	t_index_list		buildMainChainIndexList(t_vector::size_type block_count, t_vector::size_type block_size) const;
+	t_vector			buildSortedValues(const t_vector & values, const t_index_list & index_list, t_vector::size_type block_size, t_vector::size_type block_count) const;
+	void				insertPendingGroup(const t_vector & values, t_index_list & index_list, t_vector::size_type block_size, t_vector::size_type group_lower_bound, t_vector::size_type group_upper_bound);
+	void				insertPendingGroups(const t_vector & values, t_index_list & index_list, t_vector::size_type block_size, t_vector::size_type pending_block_count);
+	void				insertPendingBlocks(t_vector & values, t_vector::size_type block_size);
 
 	void	sort(t_vector & values);
 	//TODO void	sortDeque(std::deque<int> & values);
@@ -72,7 +81,7 @@ public:
 std::ostream	&operator<<(std::ostream &os, const PmergeMe &c);
 
 
-// --------------- OTHER --------------- //
+// ------------------------------ HELPERS ------------------------------ //
 
 
 template <typename Container>
@@ -109,6 +118,8 @@ std::string	containerToString(const Container &container, std::size_t max_elemen
 
 	return (oss.str());
 }
+
+// ------------------------------ DEBUG ------------------------------ //
 
 # define RESET	"\033[0m"
 # define YELLOW	"\033[33m"
