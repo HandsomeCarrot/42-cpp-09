@@ -90,10 +90,10 @@ namespace
 /**
  * @brief parameterized constructor
  * 
- * Parses a whitespace-separated sequence of non-negative integers into both
+ * Parses a whitespace-separated sequence of non-negative integers into all 3
  * internal containers while preserving the input order.
  *
- * The constructor leaves both sorted-status flags set to false.
+ * The constructor leaves the sorted-status flag set to false.
  *
  * @param value_sequence string containing the values to store
  * 
@@ -303,7 +303,6 @@ void PmergeMe::sortPairs(t_vector & values, t_vector::size_type block_size)
 	DEBUG_MSG_CONTAINER(1, "values after: ", values);
 }
 
-// maybe make this function simpler, so it takes less variables
 void PmergeMe::insertPendingGroup(
 	const t_vector & values,
 	std::vector<t_vector::size_type> & index_list,
@@ -416,8 +415,7 @@ void PmergeMe::insertPendingBlocks(t_vector & values, t_vector::size_type block_
 
 void PmergeMe::sort(t_vector & values)
 {
-	setVectorTimer(std::clock());
-
+	DEBUG_HEADER("VECTOR");
 	t_vector::size_type	block_size = 1;
 
 	DEBUG_MSG(0, BOLD << "PAIR SORT" << RESET);
@@ -428,20 +426,18 @@ void PmergeMe::sort(t_vector & values)
 	}
 
 	DEBUG_MSG(0, BOLD << "INSERT" << RESET);
-
 	while (block_size > 1)
 	{
 		block_size /= 2;
 		insertPendingBlocks(values, block_size);
 	}
-
-	setVectorTimer(std::clock() - getVectorTimer());
 }
 
 void PmergeMe::sort(void)
 {
-	DEBUG_HEADER("VECTOR");
+	setVectorTimer(std::clock());
 	sort(_vector_container);
+	setVectorTimer(std::clock() - getVectorTimer());
 
 	// sort other container
 
