@@ -1,6 +1,8 @@
-#include "PmergeMe.hpp"
-#include <exception>
-#include <iostream>
+// SECTION includes
+	#include "PmergeMe.hpp"
+	#include <exception>
+	#include <iostream>
+// END_SECTION includes
 
 int	main(int argc, char ** argv)
 {
