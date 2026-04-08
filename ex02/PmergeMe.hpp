@@ -73,20 +73,20 @@
 		// -SECTION methods
 
 			private:
-				long long	compare(int value1, int value2, unsigned int & comparison_counter, int debug_msg_indent_lvl);
+				long long	compare(int value1, int value2, unsigned int & comparison_counter, int debug_msg_indent_lvl = 0);
 			
-				void	switchPair(t_vector & values, t_vector::size_type pair_start_index, t_vector::size_type block_size);
+				void	swapBlockPair(t_vector & values, t_vector::size_type pair_start_index, t_vector::size_type block_size);
 				void	sortPairs(t_vector & values, t_vector::size_type block_size);
 			
 				t_vector::size_type	getBlockEndIndex(t_vector::size_type block_number, t_vector::size_type block_size) const;
 				t_vector::size_type	getBlockStartIndex(t_vector::size_type block_end_index, t_vector::size_type block_size) const;
-				t_vector::size_type	findPartnerPosition(const t_index_list & index_list, t_vector::size_type partner_index, t_vector::size_type value_count) const;
+				t_vector::size_type	findPartnerInMainChain(const t_index_list & index_list, t_vector::size_type partner_index, t_vector::size_type value_count) const;
 				t_vector::size_type	findInsertionPosition(const t_vector & values, const t_index_list & index_list, int current_value, t_vector::size_type right_bound);
 				t_index_list		buildMainChainIndexList(t_vector::size_type block_count, t_vector::size_type block_size) const;
-				t_vector			buildSortedValues(const t_vector & values, const t_index_list & index_list, t_vector::size_type block_size, t_vector::size_type block_count) const;
-				void				insertPendingGroup(const t_vector & values, t_index_list & index_list, t_vector::size_type block_size, t_vector::size_type group_lower_bound, t_vector::size_type group_upper_bound);
-				void				insertPendingGroups(const t_vector & values, t_index_list & index_list, t_vector::size_type block_size, t_vector::size_type pending_block_count);
-				void				insertPendingBlocks(t_vector & values, t_vector::size_type block_size);
+				t_vector			reorderByIndexList(const t_vector & values, const t_index_list & index_list, t_vector::size_type block_size, t_vector::size_type block_count) const;
+			void				insertGroupRange(const t_vector & values, t_index_list & index_list, t_vector::size_type block_size, t_vector::size_type group_lower_bound, t_vector::size_type group_upper_bound);
+			void				insertByJacobsthalOrder(const t_vector & values, t_index_list & index_list, t_vector::size_type block_size, t_vector::size_type pending_block_count);
+			void				mergeInsertAtLevel(t_vector & values, t_vector::size_type block_size);
 			
 				void	sort(t_vector & values);
 				//TODO void	sortDeque(std::deque<int> & values);

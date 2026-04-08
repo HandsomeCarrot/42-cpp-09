@@ -298,7 +298,7 @@
 		return (value1 - value2);
 	}
 	
-	void PmergeMe::switchPair(t_vector & values, t_vector::size_type pair_start_index, t_vector::size_type block_size)
+	void PmergeMe::swapBlockPair(t_vector & values, t_vector::size_type pair_start_index, t_vector::size_type block_size)
 	{
 		t_vector::iterator left_block_begin = values.begin() + pair_start_index;
 		t_vector::iterator right_block_begin = values.begin() + pair_start_index + block_size;
@@ -315,7 +315,7 @@
 			t_vector::size_type right_block_last_index = left_block_last_index + block_size;
 	
 			if (compare(values[left_block_last_index], values[right_block_last_index], _vector_comparison_count, 2) > 0)
-				switchPair(values, pair_start_index, block_size);
+				swapBlockPair(values, pair_start_index, block_size);
 		}
 		DEBUG_MSG_CONTAINER(1, "values after: ", values);
 	}
@@ -330,7 +330,7 @@
 		return (block_end_index - block_size + 1);
 	}
 	
-	PmergeMe::t_vector::size_type PmergeMe::findPartnerPosition(
+	PmergeMe::t_vector::size_type PmergeMe::findPartnerInMainChain(
 		const t_index_list & index_list,
 		t_vector::size_type partner_index,
 		t_vector::size_type value_count) const
@@ -387,32 +387,43 @@
 		return (index_list);
 	}
 	
-	void PmergeMe::insertPendingGroups(
+	namespace
+	{
+		PmergeMe::t_vector::size_type nextJacobsthalBound(
+			PmergeMe::t_vector::size_type current,
+			PmergeMe::t_vector::size_type index)
+		{
+			return static_cast<PmergeMe::t_vector::size_type>(
+				std::pow(2.0, static_cast<double>(index))) - current;
+		}
+	}
+
+	void PmergeMe::insertByJacobsthalOrder(
 		const t_vector & values,
 		t_index_list & index_list,
 		t_vector::size_type block_size,
 		t_vector::size_type pending_block_count)
 	{
 		t_vector::size_type jacobsthal_index = 3;
-		t_vector::size_type group_upper_bound = 3;
-		t_vector::size_type group_lower_bound = 2;
+		t_vector::size_type group_end = 3;
+		t_vector::size_type group_start = 2;
 	
-		while (group_lower_bound <= pending_block_count)
+		while (group_start <= pending_block_count)
 		{
 			// cap to last block
-			t_vector::size_type group_end = std::min(group_upper_bound, pending_block_count);
+			t_vector::size_type capped_group_end = std::min(group_end, pending_block_count);
 	
-			DEBUG_MSG(2, "groups " << group_end << ".." << group_lower_bound);
+			DEBUG_MSG(2, "groups " << capped_group_end << ".." << group_start);
 	
-			insertPendingGroup(values, index_list, block_size, group_lower_bound, group_end);
+			insertGroupRange(values, index_list, block_size, group_start, capped_group_end);
 	
-			group_lower_bound = group_upper_bound + 1;
-			group_upper_bound = static_cast<t_vector::size_type>(std::pow(2.0, static_cast<double>(jacobsthal_index))) - group_upper_bound; //could extract calculation to a function (e.g. nextJacobsthal)
+			group_start = group_end + 1;
+			group_end = nextJacobsthalBound(group_end, jacobsthal_index);
 			++jacobsthal_index;
 		}
 	}
 	
-	PmergeMe::t_vector PmergeMe::buildSortedValues(
+	PmergeMe::t_vector PmergeMe::reorderByIndexList(
 		const t_vector & values,
 		const t_index_list & index_list,
 		t_vector::size_type block_size,
@@ -437,7 +448,7 @@
 		return (sorted_values);
 	}
 	
-	void PmergeMe::insertPendingGroup(
+	void PmergeMe::insertGroupRange(
 		const t_vector & values,
 		t_index_list & index_list,
 		t_vector::size_type block_size,
@@ -453,7 +464,7 @@
 	
 			int	current_value = values[pending_block_end];
 			t_vector::size_type partner_index = pending_block_end + block_size;
-			t_vector::size_type right_bound = findPartnerPosition(index_list, partner_index, values.size());
+			t_vector::size_type right_bound = findPartnerInMainChain(index_list, partner_index, values.size());
 			t_vector::size_type insert_position = findInsertionPosition(values, index_list, current_value, right_bound);
 	
 			index_list.insert(index_list.begin() + insert_position, pending_block_end);
@@ -461,7 +472,7 @@
 		}
 	}
 	
-	void PmergeMe::insertPendingBlocks(t_vector & values, t_vector::size_type block_size)
+	void PmergeMe::mergeInsertAtLevel(t_vector & values, t_vector::size_type block_size)
 	{
 		t_vector::size_type block_count = values.size() / block_size;
 		t_vector::size_type pending_block_count = (block_count + 1) / 2;
@@ -477,10 +488,10 @@
 		t_index_list index_list = buildMainChainIndexList(block_count, block_size);
 		DEBUG_MSG_CONTAINER(1, "indexes before: ", index_list);
 	
-		insertPendingGroups(values, index_list, block_size, pending_block_count);
+		insertByJacobsthalOrder(values, index_list, block_size, pending_block_count);
 		DEBUG_MSG_CONTAINER(1, "indexes after: ", index_list);
 	
-		values = buildSortedValues(values, index_list, block_size, block_count);
+		values = reorderByIndexList(values, index_list, block_size, block_count);
 	
 		DEBUG_MSG_CONTAINER(1, "values after: ", values);
 	}
@@ -495,19 +506,21 @@
 		{
 			DEBUG_HEADER("VECTOR");
 			t_vector::size_type	block_size = 1;
-		
+
+			// Phase 1: recursively sort pairs at increasing block sizes
 			DEBUG_MSG(0, BOLD << "PAIR SORT" << RESET);
 			while (block_size < (values.size() / 2))
 			{
 				sortPairs(values, block_size);
 				block_size *= 2;
 			}
-		
+
+			// Phase 2: merge-insert pending elements at decreasing block sizes
 			DEBUG_MSG(0, BOLD << "INSERT" << RESET);
 			while (block_size > 1)
 			{
 				block_size /= 2;
-				insertPendingBlocks(values, block_size);
+				mergeInsertAtLevel(values, block_size);
 			}
 		}
 
