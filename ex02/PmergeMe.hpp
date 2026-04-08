@@ -9,13 +9,15 @@
 	#include <sstream>	//std::ostringstream
 	#include <string>	//std::string
 	#include <vector>	//std::vector
+
 // END_SECTION includes
 
 // SECTION class
 
 	class PmergeMe
 	{
-		// SECTION variables
+		// -SECTION variables
+
 			public: 
 				typedef std::vector<int>	t_vector;
 				typedef std::deque<int>		t_deque;
@@ -32,9 +34,11 @@
 				t_deque			_deque_container;
 				unsigned int	_deque_comparison_count;
 				std::clock_t	_deque_timer;
-		// END_SECTION variables
 
-		// SECTION constructors
+		// -END_SECTION variables
+
+		// -SECTION constructors
+
 			private:
 				PmergeMe(void);
 				PmergeMe(const PmergeMe &other);
@@ -43,9 +47,11 @@
 				~PmergeMe(void);
 			
 				PmergeMe(const std::string & value_sequence);
-		// END_SECTION constructors
 
-		// SECTION accessors
+		// -END_SECTION constructors
+
+		// -SECTION accessors
+
 			public:
 				const t_vector	getUnsortedVector(void) const;
 				bool			getSortedStatus(void) const;
@@ -61,9 +67,11 @@
 			
 				void	setVectorTimer(std::clock_t time);
 				void	getDequeTimer(std::clock_t time);
-		// END_SECTION accessors
+
+		// -END_SECTION accessors
 		
-		// SECTION methods
+		// -SECTION methods
+
 			private:
 				long long	compare(int value1, int value2, unsigned int & comparison_counter, int debug_msg_indent_lvl);
 			
@@ -84,10 +92,12 @@
 				//TODO void	sortDeque(std::deque<int> & values);
 			public:
 				void	sort(void);
-		// END_SECTION methods
+
+		// -END_SECTION methods
 	};
 	
 	std::ostream	&operator<<(std::ostream &os, const PmergeMe &c);
+
 // END_SECTION class
 
 // SECTION helper functions
@@ -126,6 +136,7 @@
 	
 		return (oss.str());
 	}
+
 // END_SECTION helper functions
 
 // SECTION debug
@@ -158,6 +169,7 @@
 	#  define DEBUG_HEADER(description)
 	#  define DEBUG_MSG_CONTAINER(level, msg, container)
 	# endif
+
 // END_SECTION debug
 
 #endif /* PMERGEME_HPP */

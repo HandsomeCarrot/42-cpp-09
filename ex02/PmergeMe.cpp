@@ -134,6 +134,7 @@
 		if (_vector_container.empty())
 			throw std::runtime_error("sequence is empty");
 	}
+
 // END_SECTION constructors
 
 // SECTION accessors
@@ -187,6 +188,7 @@
 	{
 		_deque_timer = time;
 	}
+
 // END_SECTION accessors
 
 // SECTION stream operator
@@ -263,6 +265,7 @@
 	
 		return (os);
 	}
+
 // END_SECTION stream operator
 
 // SECTION sort helpers
@@ -481,11 +484,12 @@
 	
 		DEBUG_MSG_CONTAINER(1, "values after: ", values);
 	}
+
 // END_SECTION sort helpers
 
 // SECTION sort
 
-	// SECTION vector
+	// -SECTION vector
 
 		void PmergeMe::sort(t_vector & values)
 		{
@@ -506,7 +510,8 @@
 				insertPendingBlocks(values, block_size);
 			}
 		}
-	// END_SECTION vector
+
+	// -END_SECTION vector
 
 	void PmergeMe::sort(void)
 	{
@@ -518,4 +523,5 @@
 	
 		_sorted = true;
 	}
+
 // END_SECTION sort
