@@ -386,17 +386,6 @@
 	
 		return (index_list);
 	}
-	
-	namespace
-	{
-		PmergeMe::t_vector::size_type nextJacobsthalBound(
-			PmergeMe::t_vector::size_type current,
-			PmergeMe::t_vector::size_type index)
-		{
-			return static_cast<PmergeMe::t_vector::size_type>(
-				std::pow(2.0, static_cast<double>(index))) - current;
-		}
-	}
 
 	void PmergeMe::insertByJacobsthalOrder(
 		const t_vector & values,
@@ -404,9 +393,11 @@
 		t_vector::size_type block_size,
 		t_vector::size_type pending_block_count)
 	{
-		t_vector::size_type jacobsthal_index = 3;
-		t_vector::size_type group_end = 3;
+		// group_end: the current jacobsthal-number (a number of the jacobsthal-sequence),
+		// but also the index for a (number)group in the vector
 		t_vector::size_type group_start = 2;
+		t_vector::size_type group_end = 3;
+		t_vector::size_type prev_group_end = 1;
 	
 		while (group_start <= pending_block_count)
 		{
@@ -418,8 +409,9 @@
 			insertGroupRange(values, index_list, block_size, group_start, capped_group_end);
 	
 			group_start = group_end + 1;
-			group_end = nextJacobsthalBound(group_end, jacobsthal_index);
-			++jacobsthal_index;
+			t_vector::size_type next_group_end = group_end + (2 * prev_group_end);
+			prev_group_end = group_end;
+			group_end = next_group_end;
 		}
 	}
 	
