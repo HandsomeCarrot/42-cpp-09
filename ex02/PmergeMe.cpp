@@ -1,6 +1,7 @@
 // SECTION includes
 
 	#include "PmergeMe.hpp"
+	#include <climits>		//ULONG_MAX
 	#include <algorithm>	//std::swap_ranges
 	#include <cerrno>		//errno, ERANGE
 	#include <cstdlib>		//std::strtol
@@ -229,11 +230,22 @@
 		std::string clockToString(std::clock_t ticks)
 		{
 			if (ticks < 0)
-				return ("Warning: negative time value!");
+			{
+				std::cerr << "Warning: negative time value given: canceled operation!" << std::endl;
+				return ("0");
+			}
 
 			unsigned long seconds = static_cast<unsigned long>(ticks) / CLOCKS_PER_SEC;
 
 			unsigned long leftover_ticks = static_cast<unsigned long>(ticks) % CLOCKS_PER_SEC;
+
+			// check if multiplication would overflow
+			if (MICROSECONDS_PER_SECOND != 0 && leftover_ticks > (ULONG_MAX / MICROSECONDS_PER_SECOND))
+			{
+				std::cerr << "Warning: calculation overflow in time conversion: canceled operation!" << std::endl;
+				return ("0");
+			}
+
 			unsigned long leftover_microseconds = (leftover_ticks * MICROSECONDS_PER_SECOND) / CLOCKS_PER_SEC;
 
 			unsigned long milliseconds = leftover_microseconds / MICROSECONDS_PER_MILLI;
