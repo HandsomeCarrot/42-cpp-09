@@ -137,6 +137,13 @@
 
 // END_SECTION helper functions
 
+// SECTION macros
+
+	#define MICROSECONDS_PER_SECOND 1000000
+	#define MICROSECONDS_PER_MILLI 1000
+
+// END_SECTION macros
+
 // SECTION debug
 
 	# define RESET	"\033[0m"

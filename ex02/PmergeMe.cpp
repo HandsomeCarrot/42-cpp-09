@@ -228,15 +228,22 @@
 	
 		std::string clockToString(std::clock_t ticks)
 		{
-			unsigned long long us = static_cast<unsigned long long>((static_cast<double>(ticks) * 1000000.0) / CLOCKS_PER_SEC);
-	
-			unsigned long long s = us / 1000000;
-			us %= 1000000;
-			unsigned long long ms = us / 1000;
-			us %= 1000;
-	
+			if (ticks < 0)
+				return ("Warning: negative time value!");
+
+			unsigned long seconds = static_cast<unsigned long>(ticks) / CLOCKS_PER_SEC;
+
+			unsigned long leftover_ticks = static_cast<unsigned long>(ticks) % CLOCKS_PER_SEC;
+			unsigned long leftover_microseconds = (leftover_ticks * MICROSECONDS_PER_SECOND) / CLOCKS_PER_SEC;
+
+			unsigned long milliseconds = leftover_microseconds / MICROSECONDS_PER_MILLI;
+			unsigned long microseconds = leftover_microseconds % MICROSECONDS_PER_MILLI;
+
 			std::ostringstream time_string;
-			time_string << s << " s " << ms << " ms " << us << " us";
+			time_string << seconds << " s "
+						<< milliseconds << " ms "
+						<< microseconds << " us";
+
 			return (time_string.str());
 		}
 	}
