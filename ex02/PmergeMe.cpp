@@ -3,7 +3,6 @@
 	#include "PmergeMe.hpp"
 	#include <algorithm>	//std::swap_ranges
 	#include <cerrno>		//errno, ERANGE
-	#include <cmath>		//std::pow
 	#include <cstdlib>		//std::strtol
 	#include <ctime>		//std::clock, std::clock_t, CLOCKS_PER_SEC
 	#include <iostream>		//std::cerr/cout/endl
@@ -14,7 +13,9 @@
 	
 	#ifdef DEBUG
 	# include <ios>			//std::boolalpha
+	# include <cmath>		//std::log, std::ceil
 	#endif /* DEBUG */
+
 // END_SECTION includes
 
 // SECTION constructors
