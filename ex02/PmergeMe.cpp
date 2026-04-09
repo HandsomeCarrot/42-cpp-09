@@ -135,6 +135,27 @@
 			throw std::runtime_error("sequence is empty");
 	}
 
+	PmergeMe::PmergeMe(int argc, char ** argv) :
+		_vector_comparison_count(0),
+		_vector_timer(0),
+		_deque_comparison_count(0),
+		_deque_timer(0)
+	{
+		DEBUG_MSG_LABEL(0, "[PmergeMe] ", "constructor(param)");
+
+		if (argc < 2)
+			throw std::runtime_error("sequence is too small (minimum of 2 numbers)");
+
+		for (int i = 0; i < argc; ++i)
+		{
+			int parsed_value = parseValueToken(argv[i]);
+
+			_unsorted_vector.push_back(parsed_value);
+			_vector_container.push_back(parsed_value);
+			_deque_container.push_back(parsed_value);
+		}
+	}
+
 // END_SECTION constructors
 
 // SECTION accessors

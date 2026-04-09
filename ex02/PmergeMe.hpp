@@ -45,6 +45,7 @@
 			public:
 				~PmergeMe(void);
 				PmergeMe(const std::string & value_sequence);
+				PmergeMe(int argc, char ** argv);
 
 		// -END_SECTION constructors
 
