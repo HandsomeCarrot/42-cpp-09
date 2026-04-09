@@ -541,8 +541,6 @@
 		setVectorTimer(std::clock() - getVectorTimer());
 	
 		// sort other container
-	
-		_sorted = true;
 	}
 
 // END_SECTION sort
