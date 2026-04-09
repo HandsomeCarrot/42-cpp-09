@@ -553,11 +553,34 @@
 
 	// -END_SECTION vector
 
+	// -SECTION time helpers
+
+		namespace
+		{
+			std::clock_t getCurrentClock(void)
+			{
+				std::clock_t time = std::clock();
+				if (time == static_cast<std::clock_t>(-1))
+					throw std::runtime_error("failed to get current time");
+				return (time);
+			}
+
+			std::clock_t getElapsedClock(std::clock_t timestamp)
+			{
+				std::clock_t current_clock = getCurrentClock();
+				if (current_clock < timestamp)
+					throw std::runtime_error("timestamp is a time traveler");
+				return (current_clock - timestamp);
+			}
+		}
+
+	// -END_SECTION time helpers
+
 	void PmergeMe::sort(void)
 	{
-		setVectorTimer(std::clock());
+		setVectorTimer(getCurrentClock());
 		sort(_vector_container);
-		setVectorTimer(std::clock() - getVectorTimer());
+		setVectorTimer(getElapsedClock(getVectorTimer()));
 	
 		// sort other container
 	}
