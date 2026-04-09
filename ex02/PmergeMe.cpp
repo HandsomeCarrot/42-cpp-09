@@ -111,7 +111,6 @@
 	 *     - contains a negative number
 	 */
 	PmergeMe::PmergeMe(const std::string & value_sequence) :
-		_sorted(false),
 		_vector_comparison_count(0),
 		_vector_timer(0),
 		_deque_comparison_count(0),
@@ -142,11 +141,6 @@
 	const PmergeMe::t_vector PmergeMe::getUnsortedVector(void) const
 	{
 		return (_unsorted_vector);
-	}
-	
-	bool PmergeMe::getSortedStatus(void) const
-	{
-		return (_sorted);
 	}
 	
 	const PmergeMe::t_vector PmergeMe::getVectorContainer(void) const
@@ -240,7 +234,7 @@
 	
 		#ifdef DEBUG
 			os << "After : " << containerToString(c.getDequeContainer()) << " (deque)" << std::endl;
-			os << "sorted: " << std::boolalpha << c.getSortedStatus() << std::endl;
+			// os << "sorted: " << std::boolalpha << c.getSortedStatus() << std::endl;
 		
 			os << "comparisons: max = " \
 				<< getMaxComparisons(c.getUnsortedVector().size()) \

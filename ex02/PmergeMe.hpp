@@ -23,14 +23,13 @@
 				typedef std::deque<int>		t_deque;
 			private:
 				typedef std::vector<t_vector::size_type>	t_index_list;
-			
+
 				t_vector	_unsorted_vector;
-				bool		_sorted;
-			
+
 				t_vector		_vector_container;
 				unsigned int	_vector_comparison_count;
 				std::clock_t	_vector_timer;
-			
+
 				t_deque			_deque_container;
 				unsigned int	_deque_comparison_count;
 				std::clock_t	_deque_timer;
@@ -45,7 +44,6 @@
 				PmergeMe	&operator=(const PmergeMe &other);
 			public:
 				~PmergeMe(void);
-			
 				PmergeMe(const std::string & value_sequence);
 
 		// -END_SECTION constructors
@@ -54,17 +52,16 @@
 
 			public:
 				const t_vector	getUnsortedVector(void) const;
-				bool			getSortedStatus(void) const;
-			
+
 				const t_vector	getVectorContainer(void) const;
 				const t_deque	getDequeContainer(void) const;
-			
+
 				unsigned int	getVectorComparisonCount(void) const;
 				unsigned int	getDequeComparisonCount(void) const;
-			
+
 				std::clock_t	getVectorTimer(void) const;
 				std::clock_t	getDequeTimer(void) const;
-			
+
 				void	setVectorTimer(std::clock_t time);
 				void	getDequeTimer(std::clock_t time);
 
