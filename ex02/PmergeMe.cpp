@@ -569,7 +569,7 @@
 			{
 				std::clock_t current_clock = getCurrentClock();
 				if (current_clock < timestamp)
-					throw std::runtime_error("timestamp is a time traveler");
+					throw std::runtime_error("timer is broken");
 				return (current_clock - timestamp);
 			}
 		}
