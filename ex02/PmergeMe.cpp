@@ -472,7 +472,7 @@
 				// cap to last block
 				t_vector::size_type capped_group_end = std::min(group_end, pending_block_count);
 		
-				DEBUG_MSG(2, "groups " << capped_group_end << ".." << group_start);
+				DEBUG_MSG(2, "groups [" << capped_group_end << ", " << group_start << "]");
 		
 				insertGroupRange_vector(values, index_list, block_size, group_start, capped_group_end);
 		
@@ -664,7 +664,7 @@
 				// cap to last block
 				t_deque::size_type capped_group_end = std::min(group_end, pending_block_count);
 		
-				DEBUG_MSG(2, "groups " << capped_group_end << ".." << group_start);
+				DEBUG_MSG(2, "groups [" << capped_group_end << ", " << group_start << "]");
 		
 				insertGroupRange_deque(values, index_list, block_size, group_start, capped_group_end);
 		
