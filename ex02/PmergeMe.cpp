@@ -213,6 +213,7 @@
 	namespace
 	{
 		#ifdef DEBUG
+
 			unsigned int getMaxComparisons(unsigned int element_count)
 			{
 				unsigned int max_comparisons = 0;
@@ -225,6 +226,27 @@
 				}
 				return (max_comparisons);
 			}
+
+			bool isVectorSorted(const PmergeMe::t_vector container)
+			{
+				for (PmergeMe::t_vector::const_iterator i = container.begin(); i + 1 != container.end(); ++i)
+				{
+					if (i > i + 1)
+						return (false);
+				}
+				return (true);
+			}
+
+			bool isDequeSorted(const PmergeMe::t_deque container)
+			{
+				for (PmergeMe::t_deque::const_iterator i = container.begin(); i + 1 != container.end(); ++i)
+				{
+					if (i > i + 1)
+						return (false);
+				}
+				return (true);
+			}
+
 		#endif /* DEBUG */
 	
 		std::string clockToString(std::clock_t ticks)
@@ -275,7 +297,12 @@
 	
 		#ifdef DEBUG
 			os << "After : " << containerToString(c.getDequeContainer()) << " (deque)" << std::endl;
-			// os << "sorted: " << std::boolalpha << c.getSortedStatus() << std::endl;
+
+			os << "sorted: "
+				<< std::boolalpha
+				<< "vector = " << isVectorSorted(c.getVectorContainer())
+				<< ", deque = " << isDequeSorted(c.getDequeContainer())
+				<< std::endl;
 		
 			os << "comparisons: max = " \
 				<< getMaxComparisons(c.getUnsortedVector().size()) \
@@ -283,7 +310,7 @@
 				<< ", deque = " \
 				<< c.getDequeComparisonCount() \
 				<< std::endl;
-	
+
 		#endif /* DEBUG */
 	
 		os << "Time to process a range of " \
@@ -540,7 +567,7 @@
 		
 			std::swap_ranges(left_block_begin, right_block_begin, right_block_begin);
 		}
-		
+
 		void PmergeMe::sortPairs_deque(t_deque & values, t_deque::size_type block_size)
 		{
 			DEBUG_MSG(1, "block size = " << block_size);
@@ -548,7 +575,7 @@
 			{
 				t_deque::size_type left_block_last_index = pair_start_index + block_size - 1;
 				t_deque::size_type right_block_last_index = left_block_last_index + block_size;
-		
+
 				if (compare(values[left_block_last_index], values[right_block_last_index], _deque_comparison_count, 2) > 0)
 					swapBlockPair_deque(values, pair_start_index, block_size);
 			}
@@ -571,13 +598,13 @@
 			t_deque::size_type value_count) const
 		{
 			t_deque::size_type partner_position = 0;
-		
+
 			if (partner_index >= value_count)
 				return (index_list.size());
-		
+
 			while (partner_position < index_list.size() && index_list[partner_position] != partner_index)
 				++partner_position;
-		
+
 			return (partner_position);
 		}
 		
@@ -610,8 +637,6 @@
 			t_deque::size_type block_size) const
 		{
 			t_deque_index_list	index_list;
-		
-			// ?deque doesn't have reserve() method?
 		
 			if (block_count > 0)
 				index_list.push_back(getBlockEndIndex_deque(1, block_size));
@@ -657,24 +682,22 @@
 			t_deque::size_type block_count) const
 		{
 			t_deque	sorted_values;
-		
-			// ?deque doesn't have reserve() method?
-		
+
 			for (t_deque::size_type i = 0; i < index_list.size(); ++i)
 			{
 				t_deque::size_type block_end = index_list[i];
 				t_deque::size_type block_start = getBlockStartIndex_deque(block_end, block_size);
-		
+
 				for (t_deque::size_type value_index = block_start; value_index <= block_end; ++value_index)
 					sorted_values.push_back(values[value_index]);
 			}
-		
+
 			for (t_deque::size_type i = block_count * block_size; i < values.size(); ++i)
 				sorted_values.push_back(values[i]);
-		
+
 			return (sorted_values);
 		}
-		
+
 		void PmergeMe::insertGroupRange_deque(
 			const t_deque & values,
 			t_deque_index_list & index_list,
@@ -686,40 +709,40 @@
 			{
 				t_deque::size_type pending_block_number = (2 * current_group) - 1;
 				t_deque::size_type pending_block_end = getBlockEndIndex_deque(pending_block_number, block_size);
-		
+
 				DEBUG_MSG(3, "insert group " << current_group << ": v[" << pending_block_end << "] = " << values[pending_block_end]);
-		
+
 				int	current_value = values[pending_block_end];
 				t_deque::size_type partner_index = pending_block_end + block_size;
 				t_deque::size_type right_bound = findPartnerInMainChain_deque(index_list, partner_index, values.size());
 				t_deque::size_type insert_position = findInsertionPosition_deque(values, index_list, current_value, right_bound);
-		
+
 				index_list.insert(index_list.begin() + insert_position, pending_block_end);
 				DEBUG_MSG(4, "inserted at index_list[" << insert_position << "]");
 			}
 		}
-		
+	
 		void PmergeMe::mergeInsertAtLevel_deque(t_deque & values, t_deque::size_type block_size)
 		{
 			t_deque::size_type block_count = values.size() / block_size;
 			t_deque::size_type pending_block_count = (block_count + 1) / 2;
-		
+
 			DEBUG_MSG(1, "block size = " << block_size << " | blocks = " << block_count << " | insertions = " << pending_block_count);
-			
+		
 			if (pending_block_count <= 1)
 			{
 				DEBUG_MSG(2, DIM << "nothing changed" << RESET);
 				return ;
 			}
-		
+
 			t_deque_index_list index_list = buildMainChainIndexList_deque(block_count, block_size);
 			DEBUG_MSG_CONTAINER(1, "indexes before: ", index_list);
-		
+
 			insertByJacobsthalOrder_deque(values, index_list, block_size, pending_block_count);
 			DEBUG_MSG_CONTAINER(1, "indexes after: ", index_list);
-		
+
 			values = reorderByIndexList_deque(values, index_list, block_size, block_count);
-		
+
 			DEBUG_MSG_CONTAINER(1, "values after: ", values);
 		}
 
@@ -810,7 +833,7 @@
 		setVectorTimer(getCurrentClock());
 		sortVector(_vector_container);
 		setVectorTimer(getElapsedClock(getVectorTimer()));
-	
+
 		// deque
 		setDequeTimer(getCurrentClock());
 		sortDeque(_deque_container);
