@@ -10,7 +10,7 @@ int	main(int argc, char ** argv)
 {
 	if (argc < 3)
 	{
-		std::cerr << "Error: wrong usage"
+		std::cerr << "Error: wrong usage\n"
 			<< "Usage: " << argv[0] << " <list of, at least 3, numbers>"
 			<< std::endl;
 		return (1);
