@@ -752,7 +752,7 @@
 
 // SECTION sort
 
-	// SECTION vector
+	// SECTION specialized sorts
 
 		void PmergeMe::sortVector(t_vector & values)
 		{
@@ -761,7 +761,7 @@
 
 			// Phase 1: recursively sort pairs at increasing block sizes
 			DEBUG_MSG(0, BOLD << "PAIR SORT" << RESET);
-			while (block_size < (values.size() / 2))
+			while (block_size <= (values.size() / 2))
 			{
 				sortPairs_vector(values, block_size);
 				block_size *= 2;
@@ -776,10 +776,6 @@
 			}
 		}
 
-	// END_SECTION vector
-
-	// SECTION deque
-
 		void PmergeMe::sortDeque(t_deque & values)
 		{
 			DEBUG_HEADER("DEQUE");
@@ -787,7 +783,7 @@
 
 			// Phase 1: recursively sort pairs at increasing block sizes
 			DEBUG_MSG(0, BOLD << "PAIR SORT" << RESET);
-			while (block_size < (values.size() / 2))
+			while (block_size <= (values.size() / 2))
 			{
 				sortPairs_deque(values, block_size);
 				block_size *= 2;
@@ -802,7 +798,7 @@
 			}
 		}
 
-	// END_SECTION deque
+	// END_SECTION specialized sorts
 
 	// SECTION time helpers
 
