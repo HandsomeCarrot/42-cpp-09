@@ -201,7 +201,7 @@
 		_vector_timer = time;
 	}
 	
-	void PmergeMe::getDequeTimer(std::clock_t time)
+	void PmergeMe::setDequeTimer(std::clock_t time)
 	{
 		_deque_timer = time;
 	}
@@ -731,7 +731,7 @@
 
 	// SECTION vector
 
-		void PmergeMe::sort(t_vector & values)
+		void PmergeMe::sortVector(t_vector & values)
 		{
 			DEBUG_HEADER("VECTOR");
 			t_vector::size_type	block_size = 1;
@@ -754,6 +754,32 @@
 		}
 
 	// END_SECTION vector
+
+	// SECTION deque
+
+		void PmergeMe::sortDeque(t_deque & values)
+		{
+			DEBUG_HEADER("DEQUE");
+			t_deque::size_type	block_size = 1;
+
+			// Phase 1: recursively sort pairs at increasing block sizes
+			DEBUG_MSG(0, BOLD << "PAIR SORT" << RESET);
+			while (block_size < (values.size() / 2))
+			{
+				sortPairs_deque(values, block_size);
+				block_size *= 2;
+			}
+
+			// Phase 2: merge-insert pending elements at decreasing block sizes
+			DEBUG_MSG(0, BOLD << "INSERT" << RESET);
+			while (block_size > 1)
+			{
+				block_size /= 2;
+				mergeInsertAtLevel_deque(values, block_size);
+			}
+		}
+
+	// END_SECTION deque
 
 	// SECTION time helpers
 
@@ -780,11 +806,15 @@
 
 	void PmergeMe::sort(void)
 	{
+		// vector
 		setVectorTimer(getCurrentClock());
-		sort(_vector_container);
+		sortVector(_vector_container);
 		setVectorTimer(getElapsedClock(getVectorTimer()));
 	
-		// sort other container
+		// deque
+		setDequeTimer(getCurrentClock());
+		sortDeque(_deque_container);
+		setDequeTimer(getElapsedClock(getDequeTimer()));
 	}
 
 // END_SECTION sort

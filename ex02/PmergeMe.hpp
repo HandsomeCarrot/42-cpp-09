@@ -65,7 +65,7 @@
 				std::clock_t	getDequeTimer(void) const;
 
 				void	setVectorTimer(std::clock_t time);
-				void	getDequeTimer(std::clock_t time);
+				void	setDequeTimer(std::clock_t time);
 
 		// END_SECTION accessors
 		
@@ -121,8 +121,8 @@
 
 			// END_SECTION helpers
 			
-				void	sort(t_vector & values);
-				//TODO void	sortDeque(std::deque<int> & values);
+				void	sortVector(t_vector & values);
+				void	sortDeque(t_deque & values);
 			public:
 				void	sort(void);
 
