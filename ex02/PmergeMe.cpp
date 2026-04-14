@@ -305,229 +305,431 @@
 
 // SECTION sort helpers
 
-	/**
-	 * @brief Compares two values while tracking the number of comparisons made.
-	 *
-	 * Increments @p comparison_counter before returning the arithmetic difference
-	 * between @p value1 and @p value2. If the counter has already reached its
-	 * maximum representable value, a warning is printed before the increment,
-	 * meaning the next increment wraps according to `unsigned int` semantics.
-	 *
-	 * @param value1 first value to compare
-	 * @param value2 second value to compare
-	 * @param comparison_counter reference to the comparison counter to update
-	 *
-	 * @return a positive value if @p value1 is greater than @p value2, zero if
-	 * they are equal, or a negative value otherwise
-	 */
-	long long PmergeMe::compare(int value1, int value2, unsigned int & comparison_counter, int debug_msg_indent_lvl)
-	{
-		if (comparison_counter == std::numeric_limits<unsigned int>::max())
-			std::cerr << "Warning: comparison count overflowed!" << std::endl;
-	
-		++comparison_counter;
-	
-		DEBUG_MSG(debug_msg_indent_lvl, "cmp(" << comparison_counter << ") -> [" << value1 << " | " << value2 << "]");
-		(void)debug_msg_indent_lvl;
-	
-		return (value1 - value2);
-	}
-	
-	void PmergeMe::swapBlockPair(t_vector & values, t_vector::size_type pair_start_index, t_vector::size_type block_size)
-	{
-		t_vector::iterator left_block_begin = values.begin() + pair_start_index;
-		t_vector::iterator right_block_begin = values.begin() + pair_start_index + block_size;
-	
-		std::swap_ranges(left_block_begin, right_block_begin, right_block_begin);
-	}
-	
-	void PmergeMe::sortPairs(t_vector & values, t_vector::size_type block_size)
-	{
-		DEBUG_MSG(1, "block size = " << block_size);
-		for (t_vector::size_type pair_start_index = 0; pair_start_index + (2 * block_size) <= values.size(); pair_start_index += (2 * block_size))
-		{
-			t_vector::size_type left_block_last_index = pair_start_index + block_size - 1;
-			t_vector::size_type right_block_last_index = left_block_last_index + block_size;
-	
-			if (compare(values[left_block_last_index], values[right_block_last_index], _vector_comparison_count, 2) > 0)
-				swapBlockPair(values, pair_start_index, block_size);
-		}
-		DEBUG_MSG_CONTAINER(1, "values after: ", values);
-	}
-	
-	PmergeMe::t_vector::size_type PmergeMe::getBlockEndIndex(t_vector::size_type block_number, t_vector::size_type block_size) const
-	{
-		return ((block_number * block_size) - 1);
-	}
-	
-	PmergeMe::t_vector::size_type PmergeMe::getBlockStartIndex(t_vector::size_type block_end_index, t_vector::size_type block_size) const
-	{
-		return (block_end_index - block_size + 1);
-	}
-	
-	PmergeMe::t_vector::size_type PmergeMe::findPartnerInMainChain(
-		const t_index_list & index_list,
-		t_vector::size_type partner_index,
-		t_vector::size_type value_count) const
-	{
-		t_vector::size_type partner_position = 0;
-	
-		if (partner_index >= value_count)
-			return (index_list.size());
-	
-		while (partner_position < index_list.size() && index_list[partner_position] != partner_index)
-			++partner_position;
-	
-		return (partner_position);
-	}
-	
-	PmergeMe::t_vector::size_type PmergeMe::findInsertionPosition(
-		const t_vector & values,
-		const t_index_list & index_list,
-		int current_value,
-		t_vector::size_type right_bound)
-	{
-		t_vector::size_type left = 0;
-		t_vector::size_type right = right_bound;
-	
-		DEBUG_MSG(4, DIM << "binary search window [" << left << ", " << right << ")" << RESET);
-	
-		while (left < right)
-		{
-			t_vector::size_type mid = left + ((right - left) / 2);
-	
-			if (compare(current_value, values[index_list[mid]], _vector_comparison_count, 5) < 0)
-				right = mid;
-			else
-				left = mid + 1;
-		}
-	
-		return (left);
-	}
-	
-	PmergeMe::t_index_list PmergeMe::buildMainChainIndexList(
-		t_vector::size_type block_count,
-		t_vector::size_type block_size) const
-	{
-		t_index_list	index_list;
-	
-		index_list.reserve(block_count);
-	
-		if (block_count > 0)
-			index_list.push_back(getBlockEndIndex(1, block_size));
-	
-		for (t_vector::size_type block_number = 2; block_number <= block_count; block_number += 2)
-			index_list.push_back(getBlockEndIndex(block_number, block_size));
-	
-		return (index_list);
-	}
+	// SECTION universal
 
-	void PmergeMe::insertByJacobsthalOrder(
-		const t_vector & values,
-		t_index_list & index_list,
-		t_vector::size_type block_size,
-		t_vector::size_type pending_block_count)
-	{
-		// group_end: the current jacobsthal-number (a number of the jacobsthal-sequence),
-		// but also the index for a (number)group in the vector
-		t_vector::size_type group_start = 2;
-		t_vector::size_type group_end = 3;
-		t_vector::size_type prev_group_end = 1;
-	
-		while (group_start <= pending_block_count)
+		/**
+		 * @brief Compares two values while tracking the number of comparisons made.
+		 *
+		 * Increments @p comparison_counter before returning the arithmetic difference
+		 * between @p value1 and @p value2. If the counter has already reached its
+		 * maximum representable value, a warning is printed before the increment,
+		 * meaning the next increment wraps according to `unsigned int` semantics.
+		 *
+		 * @param value1 first value to compare
+		 * @param value2 second value to compare
+		 * @param comparison_counter reference to the comparison counter to update
+		 *
+		 * @return a positive value if @p value1 is greater than @p value2, zero if
+		 * they are equal, or a negative value otherwise
+		 */
+		long long PmergeMe::compare(int value1, int value2, unsigned int & comparison_counter, int debug_msg_indent_lvl)
 		{
-			// cap to last block
-			t_vector::size_type capped_group_end = std::min(group_end, pending_block_count);
-	
-			DEBUG_MSG(2, "groups " << capped_group_end << ".." << group_start);
-	
-			insertGroupRange(values, index_list, block_size, group_start, capped_group_end);
-	
-			group_start = group_end + 1;
-			t_vector::size_type next_group_end = group_end + (2 * prev_group_end);
-			prev_group_end = group_end;
-			group_end = next_group_end;
-		}
-	}
-	
-	PmergeMe::t_vector PmergeMe::reorderByIndexList(
-		const t_vector & values,
-		const t_index_list & index_list,
-		t_vector::size_type block_size,
-		t_vector::size_type block_count) const
-	{
-		t_vector	sorted_values;
-	
-		sorted_values.reserve(values.size());
-	
-		for (t_vector::size_type i = 0; i < index_list.size(); ++i)
-		{
-			t_vector::size_type block_end = index_list[i];
-			t_vector::size_type block_start = getBlockStartIndex(block_end, block_size);
-	
-			for (t_vector::size_type value_index = block_start; value_index <= block_end; ++value_index)
-				sorted_values.push_back(values[value_index]);
-		}
-	
-		for (t_vector::size_type i = block_count * block_size; i < values.size(); ++i)
-			sorted_values.push_back(values[i]);
-	
-		return (sorted_values);
-	}
-	
-	void PmergeMe::insertGroupRange(
-		const t_vector & values,
-		t_index_list & index_list,
-		t_vector::size_type block_size,
-		t_vector::size_type group_lower_bound,
-		t_vector::size_type group_upper_bound)
-	{
-		for (t_vector::size_type current_group = group_upper_bound; current_group >= group_lower_bound; --current_group)
-		{
-			t_vector::size_type pending_block_number = (2 * current_group) - 1;
-			t_vector::size_type pending_block_end = getBlockEndIndex(pending_block_number, block_size);
-	
-			DEBUG_MSG(3, "insert group " << current_group << ": v[" << pending_block_end << "] = " << values[pending_block_end]);
-	
-			int	current_value = values[pending_block_end];
-			t_vector::size_type partner_index = pending_block_end + block_size;
-			t_vector::size_type right_bound = findPartnerInMainChain(index_list, partner_index, values.size());
-			t_vector::size_type insert_position = findInsertionPosition(values, index_list, current_value, right_bound);
-	
-			index_list.insert(index_list.begin() + insert_position, pending_block_end);
-			DEBUG_MSG(4, "inserted at index_list[" << insert_position << "]");
-		}
-	}
-	
-	void PmergeMe::mergeInsertAtLevel(t_vector & values, t_vector::size_type block_size)
-	{
-		t_vector::size_type block_count = values.size() / block_size;
-		t_vector::size_type pending_block_count = (block_count + 1) / 2;
-	
-		DEBUG_MSG(1, "block size = " << block_size << " | blocks = " << block_count << " | insertions = " << pending_block_count);
+			if (comparison_counter == std::numeric_limits<unsigned int>::max())
+				std::cerr << "Warning: comparison count overflowed!" << std::endl;
 		
-		if (pending_block_count <= 1)
+			++comparison_counter;
+		
+			DEBUG_MSG(debug_msg_indent_lvl, "cmp(" << comparison_counter << ") -> [" << value1 << " | " << value2 << "]");
+			(void)debug_msg_indent_lvl;
+		
+			return (value1 - value2);
+		}
+
+	// END_SECTION universal
+
+	// SECTION vector
+
+		void PmergeMe::swapBlockPair_vector(t_vector & values, t_vector::size_type pair_start_index, t_vector::size_type block_size)
 		{
-			DEBUG_MSG(2, DIM << "nothing changed" << RESET);
-			return ;
+			t_vector::iterator left_block_begin = values.begin() + pair_start_index;
+			t_vector::iterator right_block_begin = values.begin() + pair_start_index + block_size;
+		
+			std::swap_ranges(left_block_begin, right_block_begin, right_block_begin);
+		}
+
+		void PmergeMe::sortPairs_vector(t_vector & values, t_vector::size_type block_size)
+		{
+			DEBUG_MSG(1, "block size = " << block_size);
+			for (t_vector::size_type pair_start_index = 0; pair_start_index + (2 * block_size) <= values.size(); pair_start_index += (2 * block_size))
+			{
+				t_vector::size_type left_block_last_index = pair_start_index + block_size - 1;
+				t_vector::size_type right_block_last_index = left_block_last_index + block_size;
+		
+				if (compare(values[left_block_last_index], values[right_block_last_index], _vector_comparison_count, 2) > 0)
+					swapBlockPair_vector(values, pair_start_index, block_size);
+			}
+			DEBUG_MSG_CONTAINER(1, "values after: ", values);
+		}
+		
+		PmergeMe::t_vector::size_type PmergeMe::getBlockEndIndex_vector(t_vector::size_type block_number, t_vector::size_type block_size) const
+		{
+			return ((block_number * block_size) - 1);
+		}
+		
+		PmergeMe::t_vector::size_type PmergeMe::getBlockStartIndex_vector(t_vector::size_type block_end_index, t_vector::size_type block_size) const
+		{
+			return (block_end_index - block_size + 1);
+		}
+		
+		PmergeMe::t_vector::size_type PmergeMe::findPartnerInMainChain_vector(
+			const t_vector_index_list & index_list,
+			t_vector::size_type partner_index,
+			t_vector::size_type value_count) const
+		{
+			t_vector::size_type partner_position = 0;
+		
+			if (partner_index >= value_count)
+				return (index_list.size());
+		
+			while (partner_position < index_list.size() && index_list[partner_position] != partner_index)
+				++partner_position;
+		
+			return (partner_position);
+		}
+		
+		PmergeMe::t_vector::size_type PmergeMe::findInsertionPosition_vector(
+			const t_vector & values,
+			const t_vector_index_list & index_list,
+			int current_value,
+			t_vector::size_type right_bound)
+		{
+			t_vector::size_type left = 0;
+			t_vector::size_type right = right_bound;
+		
+			DEBUG_MSG(4, DIM << "binary search window [" << left << ", " << right << ")" << RESET);
+		
+			while (left < right)
+			{
+				t_vector::size_type mid = left + ((right - left) / 2);
+		
+				if (compare(current_value, values[index_list[mid]], _vector_comparison_count, 5) < 0)
+					right = mid;
+				else
+					left = mid + 1;
+			}
+		
+			return (left);
+		}
+		
+		PmergeMe::t_vector_index_list PmergeMe::buildMainChainIndexList_vector(
+			t_vector::size_type block_count,
+			t_vector::size_type block_size) const
+		{
+			t_vector_index_list	index_list;
+		
+			index_list.reserve(block_count);
+		
+			if (block_count > 0)
+				index_list.push_back(getBlockEndIndex_vector(1, block_size));
+		
+			for (t_vector::size_type block_number = 2; block_number <= block_count; block_number += 2)
+				index_list.push_back(getBlockEndIndex_vector(block_number, block_size));
+		
+			return (index_list);
 		}
 	
-		t_index_list index_list = buildMainChainIndexList(block_count, block_size);
-		DEBUG_MSG_CONTAINER(1, "indexes before: ", index_list);
+		void PmergeMe::insertByJacobsthalOrder_vector(
+			const t_vector & values,
+			t_vector_index_list & index_list,
+			t_vector::size_type block_size,
+			t_vector::size_type pending_block_count)
+		{
+			// group_end: the current jacobsthal-number (a number of the jacobsthal-sequence),
+			// but also the index for a (number)group in the vector
+			t_vector::size_type group_start = 2;
+			t_vector::size_type group_end = 3;
+			t_vector::size_type prev_group_end = 1;
+		
+			while (group_start <= pending_block_count)
+			{
+				// cap to last block
+				t_vector::size_type capped_group_end = std::min(group_end, pending_block_count);
+		
+				DEBUG_MSG(2, "groups " << capped_group_end << ".." << group_start);
+		
+				insertGroupRange_vector(values, index_list, block_size, group_start, capped_group_end);
+		
+				group_start = group_end + 1;
+				t_vector::size_type next_group_end = group_end + (2 * prev_group_end);
+				prev_group_end = group_end;
+				group_end = next_group_end;
+			}
+		}
+		
+		PmergeMe::t_vector PmergeMe::reorderByIndexList_vector(
+			const t_vector & values,
+			const t_vector_index_list & index_list,
+			t_vector::size_type block_size,
+			t_vector::size_type block_count) const
+		{
+			t_vector	sorted_values;
+		
+			sorted_values.reserve(values.size());
+		
+			for (t_vector::size_type i = 0; i < index_list.size(); ++i)
+			{
+				t_vector::size_type block_end = index_list[i];
+				t_vector::size_type block_start = getBlockStartIndex_vector(block_end, block_size);
+		
+				for (t_vector::size_type value_index = block_start; value_index <= block_end; ++value_index)
+					sorted_values.push_back(values[value_index]);
+			}
+		
+			for (t_vector::size_type i = block_count * block_size; i < values.size(); ++i)
+				sorted_values.push_back(values[i]);
+		
+			return (sorted_values);
+		}
+		
+		void PmergeMe::insertGroupRange_vector(
+			const t_vector & values,
+			t_vector_index_list & index_list,
+			t_vector::size_type block_size,
+			t_vector::size_type group_lower_bound,
+			t_vector::size_type group_upper_bound)
+		{
+			for (t_vector::size_type current_group = group_upper_bound; current_group >= group_lower_bound; --current_group)
+			{
+				t_vector::size_type pending_block_number = (2 * current_group) - 1;
+				t_vector::size_type pending_block_end = getBlockEndIndex_vector(pending_block_number, block_size);
+		
+				DEBUG_MSG(3, "insert group " << current_group << ": v[" << pending_block_end << "] = " << values[pending_block_end]);
+		
+				int	current_value = values[pending_block_end];
+				t_vector::size_type partner_index = pending_block_end + block_size;
+				t_vector::size_type right_bound = findPartnerInMainChain_vector(index_list, partner_index, values.size());
+				t_vector::size_type insert_position = findInsertionPosition_vector(values, index_list, current_value, right_bound);
+		
+				index_list.insert(index_list.begin() + insert_position, pending_block_end);
+				DEBUG_MSG(4, "inserted at index_list[" << insert_position << "]");
+			}
+		}
+		
+		void PmergeMe::mergeInsertAtLevel_vector(t_vector & values, t_vector::size_type block_size)
+		{
+			t_vector::size_type block_count = values.size() / block_size;
+			t_vector::size_type pending_block_count = (block_count + 1) / 2;
+		
+			DEBUG_MSG(1, "block size = " << block_size << " | blocks = " << block_count << " | insertions = " << pending_block_count);
+			
+			if (pending_block_count <= 1)
+			{
+				DEBUG_MSG(2, DIM << "nothing changed" << RESET);
+				return ;
+			}
+		
+			t_vector_index_list index_list = buildMainChainIndexList_vector(block_count, block_size);
+			DEBUG_MSG_CONTAINER(1, "indexes before: ", index_list);
+		
+			insertByJacobsthalOrder_vector(values, index_list, block_size, pending_block_count);
+			DEBUG_MSG_CONTAINER(1, "indexes after: ", index_list);
+		
+			values = reorderByIndexList_vector(values, index_list, block_size, block_count);
+		
+			DEBUG_MSG_CONTAINER(1, "values after: ", values);
+		}
+
+	// END_SECTION vector
+
+	// SECTION deque
+		
+		void PmergeMe::swapBlockPair_deque(t_deque & values, t_deque::size_type pair_start_index, t_deque::size_type block_size)
+		{
+			t_deque::iterator left_block_begin = values.begin() + pair_start_index;
+			t_deque::iterator right_block_begin = values.begin() + pair_start_index + block_size;
+		
+			std::swap_ranges(left_block_begin, right_block_begin, right_block_begin);
+		}
+		
+		void PmergeMe::sortPairs_deque(t_deque & values, t_deque::size_type block_size)
+		{
+			DEBUG_MSG(1, "block size = " << block_size);
+			for (t_deque::size_type pair_start_index = 0; pair_start_index + (2 * block_size) <= values.size(); pair_start_index += (2 * block_size))
+			{
+				t_deque::size_type left_block_last_index = pair_start_index + block_size - 1;
+				t_deque::size_type right_block_last_index = left_block_last_index + block_size;
+		
+				if (compare(values[left_block_last_index], values[right_block_last_index], _deque_comparison_count, 2) > 0)
+					swapBlockPair_deque(values, pair_start_index, block_size);
+			}
+			DEBUG_MSG_CONTAINER(1, "values after: ", values);
+		}
+
+		PmergeMe::t_deque::size_type PmergeMe::getBlockEndIndex_deque(t_deque::size_type block_number, t_deque::size_type block_size) const
+		{
+			return ((block_number * block_size) - 1);
+		}
+
+		PmergeMe::t_deque::size_type PmergeMe::getBlockStartIndex_deque(t_deque::size_type block_end_index, t_deque::size_type block_size) const
+		{
+			return (block_end_index - block_size + 1);
+		}
+
+		PmergeMe::t_deque::size_type PmergeMe::findPartnerInMainChain_deque(
+			const t_deque_index_list & index_list,
+			t_deque::size_type partner_index,
+			t_deque::size_type value_count) const
+		{
+			t_deque::size_type partner_position = 0;
+		
+			if (partner_index >= value_count)
+				return (index_list.size());
+		
+			while (partner_position < index_list.size() && index_list[partner_position] != partner_index)
+				++partner_position;
+		
+			return (partner_position);
+		}
+		
+		PmergeMe::t_deque::size_type PmergeMe::findInsertionPosition_deque(
+			const t_deque & values,
+			const t_deque_index_list & index_list,
+			int current_value,
+			t_deque::size_type right_bound)
+		{
+			t_deque::size_type left = 0;
+			t_deque::size_type right = right_bound;
+		
+			DEBUG_MSG(4, DIM << "binary search window [" << left << ", " << right << ")" << RESET);
+		
+			while (left < right)
+			{
+				t_deque::size_type mid = left + ((right - left) / 2);
+		
+				if (compare(current_value, values[index_list[mid]], _deque_comparison_count, 5) < 0)
+					right = mid;
+				else
+					left = mid + 1;
+			}
+		
+			return (left);
+		}
+		
+		PmergeMe::t_deque_index_list PmergeMe::buildMainChainIndexList_deque(
+			t_deque::size_type block_count,
+			t_deque::size_type block_size) const
+		{
+			t_deque_index_list	index_list;
+		
+			// ?deque doesn't have reserve() method?
+		
+			if (block_count > 0)
+				index_list.push_back(getBlockEndIndex_deque(1, block_size));
+		
+			for (t_deque::size_type block_number = 2; block_number <= block_count; block_number += 2)
+				index_list.push_back(getBlockEndIndex_deque(block_number, block_size));
+		
+			return (index_list);
+		}
 	
-		insertByJacobsthalOrder(values, index_list, block_size, pending_block_count);
-		DEBUG_MSG_CONTAINER(1, "indexes after: ", index_list);
-	
-		values = reorderByIndexList(values, index_list, block_size, block_count);
-	
-		DEBUG_MSG_CONTAINER(1, "values after: ", values);
-	}
+		void PmergeMe::insertByJacobsthalOrder_deque(
+			const t_deque & values,
+			t_deque_index_list & index_list,
+			t_deque::size_type block_size,
+			t_deque::size_type pending_block_count)
+		{
+			// group_end: the current jacobsthal-number (a number of the jacobsthal-sequence),
+			// but also the index for a (number)group in the deque
+			t_deque::size_type group_start = 2;
+			t_deque::size_type group_end = 3;
+			t_deque::size_type prev_group_end = 1;
+		
+			while (group_start <= pending_block_count)
+			{
+				// cap to last block
+				t_deque::size_type capped_group_end = std::min(group_end, pending_block_count);
+		
+				DEBUG_MSG(2, "groups " << capped_group_end << ".." << group_start);
+		
+				insertGroupRange_deque(values, index_list, block_size, group_start, capped_group_end);
+		
+				group_start = group_end + 1;
+				t_deque::size_type next_group_end = group_end + (2 * prev_group_end);
+				prev_group_end = group_end;
+				group_end = next_group_end;
+			}
+		}
+		
+		PmergeMe::t_deque PmergeMe::reorderByIndexList_deque(
+			const t_deque & values,
+			const t_deque_index_list & index_list,
+			t_deque::size_type block_size,
+			t_deque::size_type block_count) const
+		{
+			t_deque	sorted_values;
+		
+			// ?deque doesn't have reserve() method?
+		
+			for (t_deque::size_type i = 0; i < index_list.size(); ++i)
+			{
+				t_deque::size_type block_end = index_list[i];
+				t_deque::size_type block_start = getBlockStartIndex_deque(block_end, block_size);
+		
+				for (t_deque::size_type value_index = block_start; value_index <= block_end; ++value_index)
+					sorted_values.push_back(values[value_index]);
+			}
+		
+			for (t_deque::size_type i = block_count * block_size; i < values.size(); ++i)
+				sorted_values.push_back(values[i]);
+		
+			return (sorted_values);
+		}
+		
+		void PmergeMe::insertGroupRange_deque(
+			const t_deque & values,
+			t_deque_index_list & index_list,
+			t_deque::size_type block_size,
+			t_deque::size_type group_lower_bound,
+			t_deque::size_type group_upper_bound)
+		{
+			for (t_deque::size_type current_group = group_upper_bound; current_group >= group_lower_bound; --current_group)
+			{
+				t_deque::size_type pending_block_number = (2 * current_group) - 1;
+				t_deque::size_type pending_block_end = getBlockEndIndex_deque(pending_block_number, block_size);
+		
+				DEBUG_MSG(3, "insert group " << current_group << ": v[" << pending_block_end << "] = " << values[pending_block_end]);
+		
+				int	current_value = values[pending_block_end];
+				t_deque::size_type partner_index = pending_block_end + block_size;
+				t_deque::size_type right_bound = findPartnerInMainChain_deque(index_list, partner_index, values.size());
+				t_deque::size_type insert_position = findInsertionPosition_deque(values, index_list, current_value, right_bound);
+		
+				index_list.insert(index_list.begin() + insert_position, pending_block_end);
+				DEBUG_MSG(4, "inserted at index_list[" << insert_position << "]");
+			}
+		}
+		
+		void PmergeMe::mergeInsertAtLevel_deque(t_deque & values, t_deque::size_type block_size)
+		{
+			t_deque::size_type block_count = values.size() / block_size;
+			t_deque::size_type pending_block_count = (block_count + 1) / 2;
+		
+			DEBUG_MSG(1, "block size = " << block_size << " | blocks = " << block_count << " | insertions = " << pending_block_count);
+			
+			if (pending_block_count <= 1)
+			{
+				DEBUG_MSG(2, DIM << "nothing changed" << RESET);
+				return ;
+			}
+		
+			t_deque_index_list index_list = buildMainChainIndexList_deque(block_count, block_size);
+			DEBUG_MSG_CONTAINER(1, "indexes before: ", index_list);
+		
+			insertByJacobsthalOrder_deque(values, index_list, block_size, pending_block_count);
+			DEBUG_MSG_CONTAINER(1, "indexes after: ", index_list);
+		
+			values = reorderByIndexList_deque(values, index_list, block_size, block_count);
+		
+			DEBUG_MSG_CONTAINER(1, "values after: ", values);
+		}
+
+	// END_SECTION deque
 
 // END_SECTION sort helpers
 
 // SECTION sort
 
-	// -SECTION vector
+	// SECTION vector
 
 		void PmergeMe::sort(t_vector & values)
 		{
@@ -538,7 +740,7 @@
 			DEBUG_MSG(0, BOLD << "PAIR SORT" << RESET);
 			while (block_size < (values.size() / 2))
 			{
-				sortPairs(values, block_size);
+				sortPairs_vector(values, block_size);
 				block_size *= 2;
 			}
 
@@ -547,13 +749,13 @@
 			while (block_size > 1)
 			{
 				block_size /= 2;
-				mergeInsertAtLevel(values, block_size);
+				mergeInsertAtLevel_vector(values, block_size);
 			}
 		}
 
-	// -END_SECTION vector
+	// END_SECTION vector
 
-	// -SECTION time helpers
+	// SECTION time helpers
 
 		namespace
 		{
@@ -574,7 +776,7 @@
 			}
 		}
 
-	// -END_SECTION time helpers
+	// END_SECTION time helpers
 
 	void PmergeMe::sort(void)
 	{

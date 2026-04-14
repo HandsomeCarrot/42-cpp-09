@@ -16,13 +16,14 @@
 
 	class PmergeMe
 	{
-		// -SECTION variables
+		// SECTION variables
 
 			public: 
 				typedef std::vector<int>	t_vector;
 				typedef std::deque<int>		t_deque;
 			private:
-				typedef std::vector<t_vector::size_type>	t_index_list;
+				typedef std::vector<t_vector::size_type>	t_vector_index_list;
+				typedef std::deque<t_deque::size_type>		t_deque_index_list;
 
 				t_vector	_unsorted_vector;
 
@@ -34,9 +35,9 @@
 				unsigned int	_deque_comparison_count;
 				std::clock_t	_deque_timer;
 
-		// -END_SECTION variables
+		// END_SECTION variables
 
-		// -SECTION constructors
+		// SECTION constructors
 
 			private:
 				PmergeMe(void);
@@ -47,9 +48,9 @@
 				PmergeMe(const std::string & value_sequence);
 				PmergeMe(int argc, char ** argv);
 
-		// -END_SECTION constructors
+		// END_SECTION constructors
 
-		// -SECTION accessors
+		// SECTION accessors
 
 			public:
 				const t_vector	getUnsortedVector(void) const;
@@ -66,32 +67,66 @@
 				void	setVectorTimer(std::clock_t time);
 				void	getDequeTimer(std::clock_t time);
 
-		// -END_SECTION accessors
+		// END_SECTION accessors
 		
-		// -SECTION methods
+		// SECTION methods
 
 			private:
+
+			// SECTION helpers
+
 				long long	compare(int value1, int value2, unsigned int & comparison_counter, int debug_msg_indent_lvl = 0);
+
+				// SECTION vector
+
+					void	swapBlockPair_vector(t_vector & values, t_vector::size_type pair_start_index, t_vector::size_type block_size);
+					void	sortPairs_vector(t_vector & values, t_vector::size_type block_size);
 			
-				void	swapBlockPair(t_vector & values, t_vector::size_type pair_start_index, t_vector::size_type block_size);
-				void	sortPairs(t_vector & values, t_vector::size_type block_size);
+					t_vector::size_type	getBlockEndIndex_vector(t_vector::size_type block_number, t_vector::size_type block_size) const;
+					t_vector::size_type	getBlockStartIndex_vector(t_vector::size_type block_end_index, t_vector::size_type block_size) const;
+
+					t_vector::size_type	findPartnerInMainChain_vector(const t_vector_index_list & index_list, t_vector::size_type partner_index, t_vector::size_type value_count) const;
+					t_vector::size_type	findInsertionPosition_vector(const t_vector & values, const t_vector_index_list & index_list, int current_value, t_vector::size_type right_bound);
+
+					t_vector_index_list	buildMainChainIndexList_vector(t_vector::size_type block_count, t_vector::size_type block_size) const;
+
+					t_vector	reorderByIndexList_vector(const t_vector & values, const t_vector_index_list & index_list, t_vector::size_type block_size, t_vector::size_type block_count) const;
+
+					void	insertGroupRange_vector(const t_vector & values, t_vector_index_list & index_list, t_vector::size_type block_size, t_vector::size_type group_lower_bound, t_vector::size_type group_upper_bound);
+					void	insertByJacobsthalOrder_vector(const t_vector & values, t_vector_index_list & index_list, t_vector::size_type block_size, t_vector::size_type pending_block_count);
+					void	mergeInsertAtLevel_vector(t_vector & values, t_vector::size_type block_size);
+
+				// END_SECTION vector
+
+				// SECTION deque
+
+					void	swapBlockPair_deque(t_deque & values, t_deque::size_type pair_start_index, t_deque::size_type block_size);
+					void	sortPairs_deque(t_deque & values, t_deque::size_type block_size);
 			
-				t_vector::size_type	getBlockEndIndex(t_vector::size_type block_number, t_vector::size_type block_size) const;
-				t_vector::size_type	getBlockStartIndex(t_vector::size_type block_end_index, t_vector::size_type block_size) const;
-				t_vector::size_type	findPartnerInMainChain(const t_index_list & index_list, t_vector::size_type partner_index, t_vector::size_type value_count) const;
-				t_vector::size_type	findInsertionPosition(const t_vector & values, const t_index_list & index_list, int current_value, t_vector::size_type right_bound);
-				t_index_list		buildMainChainIndexList(t_vector::size_type block_count, t_vector::size_type block_size) const;
-				t_vector			reorderByIndexList(const t_vector & values, const t_index_list & index_list, t_vector::size_type block_size, t_vector::size_type block_count) const;
-			void				insertGroupRange(const t_vector & values, t_index_list & index_list, t_vector::size_type block_size, t_vector::size_type group_lower_bound, t_vector::size_type group_upper_bound);
-			void				insertByJacobsthalOrder(const t_vector & values, t_index_list & index_list, t_vector::size_type block_size, t_vector::size_type pending_block_count);
-			void				mergeInsertAtLevel(t_vector & values, t_vector::size_type block_size);
+					t_deque::size_type	getBlockEndIndex_deque(t_deque::size_type block_number, t_deque::size_type block_size) const;
+					t_deque::size_type	getBlockStartIndex_deque(t_deque::size_type block_end_index, t_deque::size_type block_size) const;
+
+					t_deque::size_type	findPartnerInMainChain_deque(const t_deque_index_list & index_list, t_deque::size_type partner_index, t_deque::size_type value_count) const;
+					t_deque::size_type	findInsertionPosition_deque(const t_deque & values, const t_deque_index_list & index_list, int current_value, t_deque::size_type right_bound);
+
+					t_deque_index_list	buildMainChainIndexList_deque(t_deque::size_type block_count, t_deque::size_type block_size) const;
+
+					t_deque	reorderByIndexList_deque(const t_deque & values, const t_deque_index_list & index_list, t_deque::size_type block_size, t_deque::size_type block_count) const;
+
+					void	insertGroupRange_deque(const t_deque & values, t_deque_index_list & index_list, t_deque::size_type block_size, t_deque::size_type group_lower_bound, t_deque::size_type group_upper_bound);
+					void	insertByJacobsthalOrder_deque(const t_deque & values, t_deque_index_list & index_list, t_deque::size_type block_size, t_deque::size_type pending_block_count);
+					void	mergeInsertAtLevel_deque(t_deque & values, t_deque::size_type block_size);
+
+				// END_SECTION deque
+
+			// END_SECTION helpers
 			
 				void	sort(t_vector & values);
 				//TODO void	sortDeque(std::deque<int> & values);
 			public:
 				void	sort(void);
 
-		// -END_SECTION methods
+		// END_SECTION methods
 	};
 	
 	std::ostream	&operator<<(std::ostream &os, const PmergeMe &c);
