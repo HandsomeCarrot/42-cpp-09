@@ -229,9 +229,9 @@
 
 			bool isVectorSorted(const PmergeMe::t_vector container)
 			{
-				for (PmergeMe::t_vector::const_iterator i = container.begin(); i + 1 != container.end(); ++i)
+				for (PmergeMe::t_vector::const_iterator i = container.begin(); i != container.end(); ++i)
 				{
-					if (i > i + 1)
+					if (*i > *(i + 1))
 						return (false);
 				}
 				return (true);
@@ -239,9 +239,9 @@
 
 			bool isDequeSorted(const PmergeMe::t_deque container)
 			{
-				for (PmergeMe::t_deque::const_iterator i = container.begin(); i + 1 != container.end(); ++i)
+				for (PmergeMe::t_deque::const_iterator i = container.begin(); i != container.end(); ++i)
 				{
-					if (i > i + 1)
+					if (*i > *(i + 1))
 						return (false);
 				}
 				return (true);
