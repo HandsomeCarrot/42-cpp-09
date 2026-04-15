@@ -54,6 +54,67 @@ repeat_char() {
     for (( i = 0; i < count; i++ )); do printf '%s' "$char"; done
 }
 
+# ANSI color codes
+C_RESET="\033[0m"
+C_S="\033[1;31m"      # seconds    — bold red
+C_MS="\033[33m"       # milliseconds — yellow
+C_US="\033[36m"       # microseconds — cyan
+C_SEP="\033[2;37m"    # separator /  — dim white
+C_VEC="\033[34m"      # vector       — blue
+C_DEQ="\033[35m"      # deque        — magenta
+C_TIE="\033[2m"       # tie          — dim
+C_PASS="\033[32m"     # PASS         — green
+C_FAIL="\033[1;31m"   # FAIL         — bold red
+
+# color_time RAW_SMSU — takes "s/ms/us" string and colorizes each segment
+# Returns colored string; raw width is still ${#RAW_SMSU} for column math
+color_time() {
+    local raw="$1"
+    local s ms us
+    IFS='/' read -r s ms us <<< "$raw"
+    printf "%b%s%b%b/%b%b%s%b%b/%b%b%s%b" \
+        "$C_S" "$s" "$C_RESET" \
+        "$C_SEP" "$C_RESET" \
+        "$C_MS" "$ms" "$C_RESET" \
+        "$C_SEP" "$C_RESET" \
+        "$C_US" "$us" "$C_RESET"
+}
+
+# color_faster VALUE — colorizes vector/deque/tie
+color_faster() {
+    case "$1" in
+        vector) printf "%b%s%b" "$C_VEC" "$1" "$C_RESET" ;;
+        deque)  printf "%b%s%b" "$C_DEQ" "$1" "$C_RESET" ;;
+        *)      printf "%b%s%b" "$C_TIE" "$1" "$C_RESET" ;;
+    esac
+}
+
+# color_status VALUE — colorizes PASS/FAIL
+color_status() {
+    case "$1" in
+        PASS) printf "%b%s%b" "$C_PASS" "$1" "$C_RESET" ;;
+        FAIL) printf "%b%s%b" "$C_FAIL" "$1" "$C_RESET" ;;
+        *)    printf '%s' "$1" ;;
+    esac
+}
+
+# pad_right RAW_WIDTH TOTAL_WIDTH STRING — right-pads STRING with spaces.
+# RAW_WIDTH = visible char count (without ANSI), TOTAL_WIDTH = desired column width.
+pad_right() {
+    local raw_w="$1" total_w="$2" str="$3"
+    local pad=$(( total_w - raw_w ))
+    printf '%s' "$str"
+    (( pad > 0 )) && repeat_char ' ' "$pad"
+}
+
+# pad_left RAW_WIDTH TOTAL_WIDTH STRING
+pad_left() {
+    local raw_w="$1" total_w="$2" str="$3"
+    local pad=$(( total_w - raw_w ))
+    (( pad > 0 )) && repeat_char ' ' "$pad"
+    printf '%s' "$str"
+}
+
 # ------------- Core test runner ----------------------------------------------
 # run_test  out_file  type  label  num [num ...]
 run_test() {
@@ -260,11 +321,16 @@ print_results() {
         IFS=$'\t' read -r _t label status vec_s deq_s cmp_max cmp_vec cmp_deq t_vec t_deq reasons < "$f"
         local cv_d="${cmp_vec}/${cmp_max}"
         local cd_d="${cmp_deq}/${cmp_max}"
-        local tv_fmt td_fmt
-        tv_fmt=$(us_to_smsu "$t_vec")
-        td_fmt=$(us_to_smsu "$t_deq")
-        printf "│ %-${w_label}s │ %-${w_ok}s │ %${w_cmpv}s │ %${w_cmpd}s │ %${w_tvec}s │ %${w_tdeq}s │\n" \
-            "$label" "$status" "$cv_d" "$cd_d" "$tv_fmt" "$td_fmt"
+        local tv_raw td_raw
+        tv_raw=$(us_to_smsu "$t_vec")
+        td_raw=$(us_to_smsu "$t_deq")
+        # Print with manual padding so ANSI codes don't break column widths
+        printf "│ %-${w_label}s │ " "$label"
+        pad_right ${#status} $w_ok "$(color_status "$status")"; printf " │ "
+        pad_left  ${#cv_d}  $w_cmpv "$cv_d";                    printf " │ "
+        pad_left  ${#cd_d}  $w_cmpd "$cd_d";                    printf " │ "
+        pad_left  ${#tv_raw} $w_tvec "$(color_time "$tv_raw")"; printf " │ "
+        pad_left  ${#td_raw} $w_tdeq "$(color_time "$td_raw")"; printf " │\n"
         if [[ "$status" == "FAIL" ]]; then
             printf "│  ↳ %-$(( e_inner - 4 ))s │\n" "$reasons"
             edge_fail=$(( edge_fail + 1 ))
@@ -378,8 +444,11 @@ print_results() {
 
     for row in "${rand_rows[@]}"; do
         IFS=$'\t' read -r sz runs vok dok acv acd atv atd faster flag <<< "$row"
-        printf "│ %${w_sz}s │ %${w_runs}s │ %${w_vok}s │ %${w_dok}s │ %${w_acv}s │ %${w_acd}s │ %${w_atv}s │ %${w_atd}s │ %-${w_faster}s │%s\n" \
-            "$sz" "$runs" "$vok" "$dok" "$acv" "$acd" "$atv" "$atd" "$faster" "$flag"
+        printf "│ %${w_sz}s │ %${w_runs}s │ %${w_vok}s │ %${w_dok}s │ %${w_acv}s │ %${w_acd}s │ " \
+            "$sz" "$runs" "$vok" "$dok" "$acv" "$acd"
+        pad_left  ${#atv}    $w_atv    "$(color_time   "$atv")";    printf " │ "
+        pad_left  ${#atd}    $w_atd    "$(color_time   "$atd")";    printf " │ "
+        pad_right ${#faster} $w_faster "$(color_faster "$faster")"; printf " │%s\n" "$flag"
     done
     printf "└"; repeat_char "─" $(( r_inner )); printf "┘\n"
     printf "  Randomized : %d passed, %d failed\n" "$rand_pass" "$rand_fail"
@@ -401,21 +470,29 @@ print_results() {
     local tlabel1="  Avg T_vec (s/ms/us) (randomized) : "
     local tlabel2="  Avg T_deq (s/ms/us) (randomized) : "
     local tlabel3="  Overall faster                    : "
-    local tval1="$avg_tv"
-    local tval2="$avg_td"
-    local tval3="$faster_overall"
+    # Use raw values for width math, colored values for display
+    local tval1_raw="$avg_tv"
+    local tval2_raw="$avg_td"
+    local tval3_raw="$faster_overall"
+    local tval1_col="$(color_time "$avg_tv")"
+    local tval2_col="$(color_time "$avg_td")"
+    local tval3_col="$(color_faster "$faster_overall")"
 
-    # inner width = longest label+value + 2 spaces padding on the right
-    local t_inner=$(( ${#tlabel1} + ${#tval1} ))
-    (( ${#tlabel2} + ${#tval2} > t_inner )) && t_inner=$(( ${#tlabel2} + ${#tval2} ))
-    (( ${#tlabel3} + ${#tval3} > t_inner )) && t_inner=$(( ${#tlabel3} + ${#tval3} ))
-    t_inner=$(( t_inner + 2 ))  # trailing padding
+    # inner width based on raw (visible) lengths + 2 trailing spaces
+    local t_inner=$(( ${#tlabel1} + ${#tval1_raw} ))
+    (( ${#tlabel2} + ${#tval2_raw} > t_inner )) && t_inner=$(( ${#tlabel2} + ${#tval2_raw} ))
+    (( ${#tlabel3} + ${#tval3_raw} > t_inner )) && t_inner=$(( ${#tlabel3} + ${#tval3_raw} ))
+    t_inner=$(( t_inner + 2 ))
 
     echo ""
     printf "┌─ TIMING SUMMARY "; repeat_char "─" $(( t_inner - 17 )); printf "┐\n"
-    printf "│%-${t_inner}s│\n" "${tlabel1}${tval1}"
-    printf "│%-${t_inner}s│\n" "${tlabel2}${tval2}"
-    printf "│%-${t_inner}s│\n" "${tlabel3}${tval3}"
+    # Each row: label + colored value, then pad to t_inner using raw lengths
+    printf "│%s%s" "$tlabel1" "$tval1_col"
+    repeat_char ' ' $(( t_inner - ${#tlabel1} - ${#tval1_raw} )); printf "│\n"
+    printf "│%s%s" "$tlabel2" "$tval2_col"
+    repeat_char ' ' $(( t_inner - ${#tlabel2} - ${#tval2_raw} )); printf "│\n"
+    printf "│%s%s" "$tlabel3" "$tval3_col"
+    repeat_char ' ' $(( t_inner - ${#tlabel3} - ${#tval3_raw} )); printf "│\n"
     printf "└"; repeat_char "─" $(( t_inner )); printf "┘\n"
 
     # =========================================================================
@@ -428,6 +505,7 @@ print_results() {
     if (( gfail > 0 )); then
         printf "  Failures logged to : %s\n" "$LOG_FILE"
     else
+        rm -f "$LOG_FILE"
         printf "  All tests passed — no failures logged.\n"
     fi
     echo ""
