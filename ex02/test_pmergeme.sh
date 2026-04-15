@@ -36,6 +36,18 @@ avg_float() {
     awk "BEGIN { printf \"%.1f\", $1 / $2 }"
 }
 
+# us_to_smsu MICROSECONDS — prints "s/ms/us" e.g. "0/1/532.4"
+# Accepts integers or floats (via awk)
+us_to_smsu() {
+    awk "BEGIN {
+        total = $1
+        s  = int(total / 1000000)
+        ms = int((total % 1000000) / 1000)
+        us = total - s * 1000000 - ms * 1000
+        printf \"%d/%d/%.1f\", s, ms, us
+    }"
+}
+
 # Repeat a character N times (loop handles multi-byte Unicode chars correctly)
 repeat_char() {
     local char="$1" count="$2" i
@@ -211,35 +223,35 @@ print_results() {
     # =========================================================================
 
     # First pass — measure widest value per column
-    local w_label=5   # "Label"
-    local w_cmpv=8    # "cmpV/max"
-    local w_cmpd=8    # "cmpD/max"
-    local w_tvec=9    # "T_vec(us)"
-    local w_tdeq=9    # "T_deq(us)"
+    local w_label=5   # min = "Label"
+    local w_cmpv=8    # min = "cmpV/max"
+    local w_cmpd=8    # min = "cmpD/max"
+    local w_tvec=14   # min = "T_vec(s/ms/us)"
+    local w_tdeq=14   # min = "T_deq(s/ms/us)"
+    local w_ok=4      # fixed: "PASS"/"FAIL"
 
     for f in "${edge_files[@]}"; do
         [[ -f "$f" ]] || continue
         IFS=$'\t' read -r _t label status vec_s deq_s cmp_max cmp_vec cmp_deq t_vec t_deq reasons < "$f"
         local cv_d="${cmp_vec}/${cmp_max}"
         local cd_d="${cmp_deq}/${cmp_max}"
+        local tv_fmt td_fmt
+        tv_fmt=$(us_to_smsu "$t_vec")
+        td_fmt=$(us_to_smsu "$t_deq")
         (( ${#label}  > w_label )) && w_label=${#label}
         (( ${#cv_d}   > w_cmpv  )) && w_cmpv=${#cv_d}
         (( ${#cd_d}   > w_cmpd  )) && w_cmpd=${#cd_d}
-        (( ${#t_vec}  > w_tvec  )) && w_tvec=${#t_vec}
-        (( ${#t_deq}  > w_tdeq  )) && w_tdeq=${#t_deq}
+        (( ${#tv_fmt} > w_tvec  )) && w_tvec=${#tv_fmt}
+        (( ${#td_fmt} > w_tdeq  )) && w_tdeq=${#td_fmt}
     done
 
-    # fixed widths for short columns
-    local w_ok=4   # "PASS"/"FAIL"
-
-    # total inner width = sum of cols + separators (each " │ " = 3, plus leading/trailing space)
-    # format: " %-w_label │ %-w_ok │ %w_cmpv │ %w_cmpd │ %w_tvec │ %w_tdeq "
+    # e_inner computed after all width checks — including header strings
     local e_inner=$(( w_label + w_ok + w_cmpv + w_cmpd + w_tvec + w_tdeq + 5*3 + 2 ))
 
     echo ""
     printf "┌─ HARDCODED EDGE CASES "; repeat_char "─" $(( e_inner - 23 )); printf "┐\n"
     printf "│ %-${w_label}s │ %-${w_ok}s │ %${w_cmpv}s │ %${w_cmpd}s │ %${w_tvec}s │ %${w_tdeq}s │\n" \
-        "Label" "OK?" "cmpV/max" "cmpD/max" "T_vec(us)" "T_deq(us)"
+        "Label" "OK?" "cmpV/max" "cmpD/max" "T_vec(s/ms/us)" "T_deq(s/ms/us)"
     printf "│"; repeat_char "─" $(( e_inner )); printf "│\n"
 
     local edge_pass=0 edge_fail=0
@@ -248,8 +260,11 @@ print_results() {
         IFS=$'\t' read -r _t label status vec_s deq_s cmp_max cmp_vec cmp_deq t_vec t_deq reasons < "$f"
         local cv_d="${cmp_vec}/${cmp_max}"
         local cd_d="${cmp_deq}/${cmp_max}"
+        local tv_fmt td_fmt
+        tv_fmt=$(us_to_smsu "$t_vec")
+        td_fmt=$(us_to_smsu "$t_deq")
         printf "│ %-${w_label}s │ %-${w_ok}s │ %${w_cmpv}s │ %${w_cmpd}s │ %${w_tvec}s │ %${w_tdeq}s │\n" \
-            "$label" "$status" "$cv_d" "$cd_d" "$t_vec" "$t_deq"
+            "$label" "$status" "$cv_d" "$cd_d" "$tv_fmt" "$td_fmt"
         if [[ "$status" == "FAIL" ]]; then
             printf "│  ↳ %-$(( e_inner - 4 ))s │\n" "$reasons"
             edge_fail=$(( edge_fail + 1 ))
@@ -298,7 +313,7 @@ print_results() {
     local -a rand_rows=()
     local total_tv=0 total_td=0 total_rand=0
 
-    local w_sz=4 w_runs=4 w_vok=4 w_dok=4 w_acv=7 w_acd=7 w_atv=12 w_atd=12 w_faster=6
+    local w_sz=4 w_runs=4 w_vok=4 w_dok=4 w_acv=7 w_acd=7 w_atv=14 w_atd=14 w_faster=6
 
     for sz in "${RAND_SIZES[@]}"; do
         local runs=${sz_runs[$sz]:-0}
@@ -309,8 +324,8 @@ print_results() {
         local acv acd atv atd
         acv=$(avg_float "${sz_scv[$sz]:-0}" "$runs")
         acd=$(avg_float "${sz_scd[$sz]:-0}" "$runs")
-        atv=$(avg_float "${sz_stv[$sz]:-0}" "$runs")
-        atd=$(avg_float "${sz_std[$sz]:-0}" "$runs")
+        atv=$(us_to_smsu "$(avg_float "${sz_stv[$sz]:-0}" "$runs")")
+        atd=$(us_to_smsu "$(avg_float "${sz_std[$sz]:-0}" "$runs")")
 
         local vok="${vp}/${runs}"
         local dok="${dp}/${runs}"
@@ -342,7 +357,7 @@ print_results() {
 
     # header labels
     local hd_sz="Size" hd_runs="Runs" hd_vok="Vec✓" hd_dok="Deq✓"
-    local hd_acv="AvgCmpV" hd_acd="AvgCmpD" hd_atv="AvgT_vec(us)" hd_atd="AvgT_deq(us)" hd_f="Faster"
+    local hd_acv="AvgCmpV" hd_acd="AvgCmpD" hd_atv="AvgT_vec(s/ms/us)" hd_atd="AvgT_deq(s/ms/us)" hd_f="Faster"
     (( ${#hd_sz}  > w_sz  )) && w_sz=${#hd_sz}
     (( ${#hd_runs}> w_runs)) && w_runs=${#hd_runs}
     (( ${#hd_vok} > w_vok )) && w_vok=${#hd_vok}
@@ -372,20 +387,35 @@ print_results() {
     # =========================================================================
     # TIMING SUMMARY
     # =========================================================================
-    local avg_tv avg_td
-    avg_tv=$(avg_float "$total_tv" "$total_rand")
-    avg_td=$(avg_float "$total_td" "$total_rand")
+    local avg_tv_raw avg_td_raw avg_tv avg_td
+    avg_tv_raw=$(avg_float "$total_tv" "$total_rand")
+    avg_td_raw=$(avg_float "$total_td" "$total_rand")
+    avg_tv=$(us_to_smsu "$avg_tv_raw")
+    avg_td=$(us_to_smsu "$avg_td_raw")
 
     local faster_overall="tied"
     (( total_tv < total_td )) && faster_overall="vector"
     (( total_td < total_tv )) && faster_overall="deque"
 
-    local t_inner=44
+    # Build timing rows as unpadded strings, find the longest, then pad all to match
+    local tlabel1="  Avg T_vec (s/ms/us) (randomized) : "
+    local tlabel2="  Avg T_deq (s/ms/us) (randomized) : "
+    local tlabel3="  Overall faster                    : "
+    local tval1="$avg_tv"
+    local tval2="$avg_td"
+    local tval3="$faster_overall"
+
+    # inner width = longest label+value + 2 spaces padding on the right
+    local t_inner=$(( ${#tlabel1} + ${#tval1} ))
+    (( ${#tlabel2} + ${#tval2} > t_inner )) && t_inner=$(( ${#tlabel2} + ${#tval2} ))
+    (( ${#tlabel3} + ${#tval3} > t_inner )) && t_inner=$(( ${#tlabel3} + ${#tval3} ))
+    t_inner=$(( t_inner + 2 ))  # trailing padding
+
     echo ""
     printf "┌─ TIMING SUMMARY "; repeat_char "─" $(( t_inner - 17 )); printf "┐\n"
-    printf "│  Avg T_vec (randomized) : %14s us  │\n" "$avg_tv"
-    printf "│  Avg T_deq (randomized) : %14s us  │\n" "$avg_td"
-    printf "│  Overall faster         : %-14s     │\n" "$faster_overall"
+    printf "│%-${t_inner}s│\n" "${tlabel1}${tval1}"
+    printf "│%-${t_inner}s│\n" "${tlabel2}${tval2}"
+    printf "│%-${t_inner}s│\n" "${tlabel3}${tval3}"
     printf "└"; repeat_char "─" $(( t_inner )); printf "┘\n"
 
     # =========================================================================
