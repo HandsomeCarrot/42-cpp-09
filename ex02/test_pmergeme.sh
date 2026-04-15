@@ -36,9 +36,14 @@ avg_float() {
     awk "BEGIN { printf \"%.1f\", $1 / $2 }"
 }
 
+# Repeat a character N times (loop handles multi-byte Unicode chars correctly)
+repeat_char() {
+    local char="$1" count="$2" i
+    for (( i = 0; i < count; i++ )); do printf '%s' "$char"; done
+}
+
 # ------------- Core test runner ----------------------------------------------
 # run_test  out_file  type  label  num [num ...]
-# type is "edge" or "rand" — written as first field so the parent can sort results
 run_test() {
     local out_file="$1"
     local type="$2"
@@ -111,9 +116,6 @@ run_test() {
 }
 
 # ------------- Job pool ------------------------------------------------------
-# _PIDS tracks only active pids for throttling.
-# Result files are discovered by globbing TMPDIR_ROOT at the end —
-# this avoids the bug where throttle_jobs pruned completed entries from _FILES.
 declare -a _PIDS=()
 _JOB_COUNTER=0
 
@@ -135,12 +137,10 @@ launch_test() {
     shift 2
     local nums=("$@")
 
-    # Filename computed in parent before fork
     _JOB_COUNTER=$(( _JOB_COUNTER + 1 ))
     local out_file="$TMPDIR_ROOT/job_${_JOB_COUNTER}.result"
 
     throttle_jobs
-
     run_test "$out_file" "$type" "$label" "${nums[@]}" &
     _PIDS+=($!)
 }
@@ -170,7 +170,6 @@ run_random_tests() {
     local size run nums_str
     for size in "${RAND_SIZES[@]}"; do
         for (( run = 1; run <= RUNS_PER_SIZE; run++ )); do
-            # Generate numbers in parent shell, then pass to launch_test
             nums_str=$(shuf -i 1-1000000 -n "$size" | tr '\n' ' ')
             # shellcheck disable=SC2086
             launch_test rand "size=${size} run=${run}" $nums_str
@@ -180,12 +179,17 @@ run_random_tests() {
 
 # ------------- Display -------------------------------------------------------
 
+# hline WIDTH CHAR — prints a horizontal line of CHAR repeated WIDTH times
+hline() { repeat_char "$2" "$1"; echo; }
+
+# boxline INNER_WIDTH TEXT — prints │ TEXT padded to INNER_WIDTH │
+# (TEXT is already formatted to exactly INNER_WIDTH chars by the caller)
+pad_line() { printf "│%s│\n" "$1"; }
+
 print_results() {
     local edge_files=() rand_files=()
     local f type
 
-    # Discover all result files by glob — never relies on an in-memory list
-    # that throttle_jobs could have pruned.
     for f in "$TMPDIR_ROOT"/job_*.result; do
         [[ -f "$f" ]] || continue
         type=$(cut -f1 "$f")
@@ -197,16 +201,46 @@ print_results() {
     done
 
     echo ""
-    echo "╔══════════════════════════════════════════════════════════╗"
-    echo "║              PmergeMe  Test  Results                    ║"
-    echo "╚══════════════════════════════════════════════════════════╝"
+    echo "╔══════════════════════════════════════════╗"
+    echo "║         PmergeMe  Test  Results          ║"
+    echo "╚══════════════════════════════════════════╝"
 
-    # ---- Edge cases ---------------------------------------------------------
+    # =========================================================================
+    # EDGE CASES
+    # Columns: Label | OK? | cmpV/max | cmpD/max | T_vec(us) | T_deq(us)
+    # =========================================================================
+
+    # First pass — measure widest value per column
+    local w_label=5   # "Label"
+    local w_cmpv=8    # "cmpV/max"
+    local w_cmpd=8    # "cmpD/max"
+    local w_tvec=9    # "T_vec(us)"
+    local w_tdeq=9    # "T_deq(us)"
+
+    for f in "${edge_files[@]}"; do
+        [[ -f "$f" ]] || continue
+        IFS=$'\t' read -r _t label status vec_s deq_s cmp_max cmp_vec cmp_deq t_vec t_deq reasons < "$f"
+        local cv_d="${cmp_vec}/${cmp_max}"
+        local cd_d="${cmp_deq}/${cmp_max}"
+        (( ${#label}  > w_label )) && w_label=${#label}
+        (( ${#cv_d}   > w_cmpv  )) && w_cmpv=${#cv_d}
+        (( ${#cd_d}   > w_cmpd  )) && w_cmpd=${#cd_d}
+        (( ${#t_vec}  > w_tvec  )) && w_tvec=${#t_vec}
+        (( ${#t_deq}  > w_tdeq  )) && w_tdeq=${#t_deq}
+    done
+
+    # fixed widths for short columns
+    local w_ok=4   # "PASS"/"FAIL"
+
+    # total inner width = sum of cols + separators (each " │ " = 3, plus leading/trailing space)
+    # format: " %-w_label │ %-w_ok │ %w_cmpv │ %w_cmpd │ %w_tvec │ %w_tdeq "
+    local e_inner=$(( w_label + w_ok + w_cmpv + w_cmpd + w_tvec + w_tdeq + 5*3 + 2 ))
+
     echo ""
-    echo "┌─ HARDCODED EDGE CASES ──────────────────────────────────────────────────────────┐"
-    printf "│ %-25s │ %-4s │ %8s │ %8s │ %10s │ %10s │\n" \
+    printf "┌─ HARDCODED EDGE CASES "; repeat_char "─" $(( e_inner - 23 )); printf "┐\n"
+    printf "│ %-${w_label}s │ %-${w_ok}s │ %${w_cmpv}s │ %${w_cmpd}s │ %${w_tvec}s │ %${w_tdeq}s │\n" \
         "Label" "OK?" "cmpV/max" "cmpD/max" "T_vec(us)" "T_deq(us)"
-    echo "│─────────────────────────────────────────────────────────────────────────────────│"
+    printf "│"; repeat_char "─" $(( e_inner )); printf "│\n"
 
     local edge_pass=0 edge_fail=0
     for f in "${edge_files[@]}"; do
@@ -214,30 +248,28 @@ print_results() {
         IFS=$'\t' read -r _t label status vec_s deq_s cmp_max cmp_vec cmp_deq t_vec t_deq reasons < "$f"
         local cv_d="${cmp_vec}/${cmp_max}"
         local cd_d="${cmp_deq}/${cmp_max}"
-        local ok="PASS"
-        [[ "$status" == "FAIL" ]] && ok="FAIL"
-        printf "│ %-25s │ %-4s │ %8s │ %8s │ %10s │ %10s │\n" \
-            "$label" "$ok" "$cv_d" "$cd_d" "$t_vec" "$t_deq"
+        printf "│ %-${w_label}s │ %-${w_ok}s │ %${w_cmpv}s │ %${w_cmpd}s │ %${w_tvec}s │ %${w_tdeq}s │\n" \
+            "$label" "$status" "$cv_d" "$cd_d" "$t_vec" "$t_deq"
         if [[ "$status" == "FAIL" ]]; then
-            printf "│  ↳ %-78s│\n" "$reasons"
-            (( edge_fail++ ))
+            printf "│  ↳ %-$(( e_inner - 4 ))s │\n" "$reasons"
+            edge_fail=$(( edge_fail + 1 ))
         else
-            (( edge_pass++ ))
+            edge_pass=$(( edge_pass + 1 ))
         fi
     done
-    echo "└─────────────────────────────────────────────────────────────────────────────────┘"
+    printf "└"; repeat_char "─" $(( e_inner )); printf "┘\n"
     printf "  Edge cases : %d passed, %d failed\n" "$edge_pass" "$edge_fail"
 
-    # ---- Randomized ---------------------------------------------------------
-    echo ""
-    echo "┌─ RANDOMIZED TESTS ──────────────────────────────────────────────────────────────────────┐"
-    printf "│ %6s │ %4s │ %5s │ %5s │ %8s │ %8s │ %12s │ %12s │ %-6s │\n" \
-        "Size" "Runs" "Vec✓" "Deq✓" "AvgCmpV" "AvgCmpD" "AvgT_vec(us)" "AvgT_deq(us)" "Faster"
-    echo "│─────────────────────────────────────────────────────────────────────────────────────────│"
+    # =========================================================================
+    # RANDOMIZED TESTS
+    # Columns: Size | Runs | Vec✓ | Deq✓ | AvgCmpV | AvgCmpD | AvgT_vec | AvgT_deq | Faster
+    # =========================================================================
 
-    local rand_pass=0 rand_fail=0
+    # Aggregate per size first so we can measure column widths before printing
     declare -A sz_runs sz_vpass sz_dpass sz_fail
     declare -A sz_scv sz_scd sz_stv sz_std
+
+    local rand_pass=0 rand_fail=0
 
     for f in "${rand_files[@]}"; do
         [[ -f "$f" ]] || continue
@@ -255,10 +287,19 @@ print_results() {
         [[ "$t_vec"   =~ ^[0-9]+$ ]] && sz_stv[$sz]=$(( ${sz_stv[$sz]:-0} + t_vec ))
         [[ "$t_deq"   =~ ^[0-9]+$ ]] && sz_std[$sz]=$(( ${sz_std[$sz]:-0} + t_deq ))
 
-        [[ "$status" == "PASS" ]] && (( rand_pass++ )) || (( rand_fail++ ))
+        if [[ "$status" == "PASS" ]]; then
+            rand_pass=$(( rand_pass + 1 ))
+        else
+            rand_fail=$(( rand_fail + 1 ))
+        fi
     done
 
+    # Build display rows into an array so we can measure widths before printing
+    local -a rand_rows=()
     local total_tv=0 total_td=0 total_rand=0
+
+    local w_sz=4 w_runs=4 w_vok=4 w_dok=4 w_acv=7 w_acd=7 w_atv=12 w_atd=12 w_faster=6
+
     for sz in "${RAND_SIZES[@]}"; do
         local runs=${sz_runs[$sz]:-0}
         (( runs == 0 )) && continue
@@ -271,45 +312,85 @@ print_results() {
         atv=$(avg_float "${sz_stv[$sz]:-0}" "$runs")
         atd=$(avg_float "${sz_std[$sz]:-0}" "$runs")
 
-        local faster="tie   "
+        local vok="${vp}/${runs}"
+        local dok="${dp}/${runs}"
+        local faster="tie"
         (( ${sz_stv[$sz]:-0} < ${sz_std[$sz]:-0} )) && faster="vector"
-        (( ${sz_std[$sz]:-0} < ${sz_stv[$sz]:-0} )) && faster="deque "
+        (( ${sz_std[$sz]:-0} < ${sz_stv[$sz]:-0} )) && faster="deque"
 
         local flag=""
-        (( fc > 0 )) && flag="  !"
+        (( fc > 0 )) && flag=" !"
 
-        printf "│ %6s │ %4s │ %5s │ %5s │ %8s │ %8s │ %12s │ %12s │ %-6s │%s\n" \
-            "$sz" "$runs" "$vp/$runs" "$dp/$runs" \
-            "$acv" "$acd" "$atv" "$atd" \
-            "$faster" "$flag"
+        # store as tab-separated row: sz runs vok dok acv acd atv atd faster flag
+        rand_rows+=("${sz}"$'\t'"${runs}"$'\t'"${vok}"$'\t'"${dok}"$'\t'"${acv}"$'\t'"${acd}"$'\t'"${atv}"$'\t'"${atd}"$'\t'"${faster}"$'\t'"${flag}")
+
+        # track max widths
+        (( ${#sz}    > w_sz    )) && w_sz=${#sz}
+        (( ${#runs}  > w_runs  )) && w_runs=${#runs}
+        (( ${#vok}   > w_vok   )) && w_vok=${#vok}
+        (( ${#dok}   > w_dok   )) && w_dok=${#dok}
+        (( ${#acv}   > w_acv   )) && w_acv=${#acv}
+        (( ${#acd}   > w_acd   )) && w_acd=${#acd}
+        (( ${#atv}   > w_atv   )) && w_atv=${#atv}
+        (( ${#atd}   > w_atd   )) && w_atd=${#atd}
+        (( ${#faster}> w_faster)) && w_faster=${#faster}
 
         total_tv=$(( total_tv + ${sz_stv[$sz]:-0} ))
         total_td=$(( total_td + ${sz_std[$sz]:-0} ))
         total_rand=$(( total_rand + runs ))
     done
-    echo "└─────────────────────────────────────────────────────────────────────────────────────────┘"
+
+    # header labels
+    local hd_sz="Size" hd_runs="Runs" hd_vok="Vec✓" hd_dok="Deq✓"
+    local hd_acv="AvgCmpV" hd_acd="AvgCmpD" hd_atv="AvgT_vec(us)" hd_atd="AvgT_deq(us)" hd_f="Faster"
+    (( ${#hd_sz}  > w_sz  )) && w_sz=${#hd_sz}
+    (( ${#hd_runs}> w_runs)) && w_runs=${#hd_runs}
+    (( ${#hd_vok} > w_vok )) && w_vok=${#hd_vok}
+    (( ${#hd_dok} > w_dok )) && w_dok=${#hd_dok}
+    (( ${#hd_acv} > w_acv )) && w_acv=${#hd_acv}
+    (( ${#hd_acd} > w_acd )) && w_acd=${#hd_acd}
+    (( ${#hd_atv} > w_atv )) && w_atv=${#hd_atv}
+    (( ${#hd_atd} > w_atd )) && w_atd=${#hd_atd}
+    (( ${#hd_f}   > w_faster)) && w_faster=${#hd_f}
+
+    local r_inner=$(( w_sz + w_runs + w_vok + w_dok + w_acv + w_acd + w_atv + w_atd + w_faster + 8*3 + 2 ))
+
+    echo ""
+    printf "┌─ RANDOMIZED TESTS "; repeat_char "─" $(( r_inner - 19 )); printf "┐\n"
+    printf "│ %${w_sz}s │ %${w_runs}s │ %${w_vok}s │ %${w_dok}s │ %${w_acv}s │ %${w_acd}s │ %${w_atv}s │ %${w_atd}s │ %-${w_faster}s │\n" \
+        "$hd_sz" "$hd_runs" "$hd_vok" "$hd_dok" "$hd_acv" "$hd_acd" "$hd_atv" "$hd_atd" "$hd_f"
+    printf "│"; repeat_char "─" $(( r_inner )); printf "│\n"
+
+    for row in "${rand_rows[@]}"; do
+        IFS=$'\t' read -r sz runs vok dok acv acd atv atd faster flag <<< "$row"
+        printf "│ %${w_sz}s │ %${w_runs}s │ %${w_vok}s │ %${w_dok}s │ %${w_acv}s │ %${w_acd}s │ %${w_atv}s │ %${w_atd}s │ %-${w_faster}s │%s\n" \
+            "$sz" "$runs" "$vok" "$dok" "$acv" "$acd" "$atv" "$atd" "$faster" "$flag"
+    done
+    printf "└"; repeat_char "─" $(( r_inner )); printf "┘\n"
     printf "  Randomized : %d passed, %d failed\n" "$rand_pass" "$rand_fail"
 
-    # ---- Timing summary -----------------------------------------------------
-    echo ""
-    echo "┌─ TIMING SUMMARY ────────────────────────────────────┐"
-    if (( total_rand > 0 )); then
-        local avg_tv avg_td
-        avg_tv=$(avg_float "$total_tv" "$total_rand")
-        avg_td=$(avg_float "$total_td" "$total_rand")
-        printf "│  Avg T_vec : %14s us                    │\n" "$avg_tv"
-        printf "│  Avg T_deq : %14s us                    │\n" "$avg_td"
-        if   (( total_tv < total_td )); then
-            printf "│  Faster    : vector                              │\n"
-        elif (( total_td < total_tv )); then
-            printf "│  Faster    : deque                               │\n"
-        else
-            printf "│  Faster    : tied                                │\n"
-        fi
-    fi
-    echo "└─────────────────────────────────────────────────────┘"
+    # =========================================================================
+    # TIMING SUMMARY
+    # =========================================================================
+    local avg_tv avg_td
+    avg_tv=$(avg_float "$total_tv" "$total_rand")
+    avg_td=$(avg_float "$total_td" "$total_rand")
 
-    # ---- Grand total --------------------------------------------------------
+    local faster_overall="tied"
+    (( total_tv < total_td )) && faster_overall="vector"
+    (( total_td < total_tv )) && faster_overall="deque"
+
+    local t_inner=44
+    echo ""
+    printf "┌─ TIMING SUMMARY "; repeat_char "─" $(( t_inner - 17 )); printf "┐\n"
+    printf "│  Avg T_vec (randomized) : %14s us  │\n" "$avg_tv"
+    printf "│  Avg T_deq (randomized) : %14s us  │\n" "$avg_td"
+    printf "│  Overall faster         : %-14s     │\n" "$faster_overall"
+    printf "└"; repeat_char "─" $(( t_inner )); printf "┘\n"
+
+    # =========================================================================
+    # GRAND TOTAL
+    # =========================================================================
     local gpass=$(( edge_pass + rand_pass ))
     local gfail=$(( edge_fail + rand_fail ))
     echo ""
