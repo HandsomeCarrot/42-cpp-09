@@ -4,7 +4,7 @@
 # =============================================================================
 
 # ------------- Configuration -------------------------------------------------
-BINARY="./PmergeMe"
+BINARY="../PmergeMe"
 MAX_JOBS=8
 RUNS_PER_SIZE=5
 LOG_FILE="pmergeme_failures.log"
